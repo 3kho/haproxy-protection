@@ -609,7 +609,7 @@ function M.send(method, t)
     else
         return nil, "http." .. method:lower() .. ": Invalid URL schema " .. tostring(schema)
     end
-    print("ADDR IS", addr)
+
     local c, err = connect(socket, addr, port)
 
     if c then

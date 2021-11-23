@@ -12,13 +12,6 @@ services:
       - ./src/scripts/:/usr/local/etc/haproxy/scripts/
       - ./src/libs/:/usr/local/etc/haproxy/libs/
     environment:
-      - HCAPTCHA_SECRET=${HCAPTCHA_SECRET}
-      - HCAPTCHA_SITEKEY=${HCAPTCHA_SITEKEY}
-
-  nginx:
-    image: "nginx:latest"
-
-  redis:
-    image: "redis:latest"
-    ports:
-      - 6379:6379
+      - HCAPTCHA_SECRET=0x0000000000000000000000000000000000000000
+      - HCAPTCHA_SITEKEY=10000000-ffff-ffff-ffff-000000000001
+      - COOKIE_SECRET=changeme
