@@ -15,7 +15,10 @@ function _M.resolve_fqdn(fqdn)
     return result:gsub("\n", "")
 end
 
+local secret_bucket_duration = 43200 -- 60 * 60 * 12 -- 12 hours
 function _M.generate_secret(context, salt, is_applet)
+	local start_sec = core.now()['sec']
+	local bucket = start_sec - (start_sec % secret_bucket_duration)
     local ip = context.sf:src()
 	local user_agent
 	if is_applet == true then
@@ -24,7 +27,7 @@ function _M.generate_secret(context, salt, is_applet)
 	else
 		user_agent = context.sf:req_hdr('user-agent')
 	end
-    return context.sc:xxh32(salt .. ip .. user_agent)
+    return context.sc:xxh64(salt .. bucket .. ip .. user_agent)
 end
 
 return _M
