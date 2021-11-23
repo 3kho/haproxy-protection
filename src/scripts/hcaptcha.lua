@@ -19,34 +19,38 @@ local body_template = [[
 <html>
 	<head>
 		<meta name='viewport' content='width=device-width initial-scale=1'>
-		<title>Solve this captcha...</title>
+		<title>Hold on...</title>
 		<style>
 			:root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 		    @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
 		    .h-captcha{min-height:85px;display:block}
+		    .red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100vh}
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
-			h3,p{margin:0}
+			h3,p{margin:3px}
 			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:30vh}
 		</style>
+		<noscript>
+			<style>.jsonly{display:none}</style>
+		</noscript>
 	</head>
 	<body data-pow="%s">
-		<h3>Captcha completion required</h3>
-		<p>We have detected unusual activity on the requested resource.</p>
-		<p>Please solve this captcha to prove you are not a robot.</p>
+		<h3>Checking your browser for robots...</h3>
+		<p>We have detected unusual activity.</p>
+		<p>Solve the captcha to continue.</p>
+		<noscript>
+			<p class="red">JavaScript is required on this page.</p>
+		</noscript>
 		<div>
 			<br>
 		</div>
-		<noscript>
-			<p class="red">JavaScript is required to complete the captcha.</p>
-		</noscript>
-		<form method="POST">
+		<form class="jsonly" method="POST">
 			<div class="h-captcha" data-sitekey="%s"></div>
 			<script src="https://hcaptcha.com/1/api.js" async defer></script>
 			<input type="submit" value="Calculating proof of work..." disabled>
 		</form>
-		<footer>Supported by <a href="https://kikeflare.com">KikeFlare</a></footer>
+		<footer>DDoS mitigation by <a href="https://kikeflare.com">KikeFlare</a></footer>
 		<script src="/sha1.js"></script>
 	</body>
 </html>

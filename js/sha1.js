@@ -20,7 +20,7 @@ if (window.Worker) {
 				submitButton.disabled = false;
 				submitButton.value = 'Submit';
 			} else {
-				window.location=location.search.slice(1)+location.hash;;
+				window.location=location.search.slice(1)+location.hash || "/";
 			}
 		}, dummyTime);		
 	}
