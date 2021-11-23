@@ -8,12 +8,9 @@ local json = require("json")
 
 local captcha_secret = os.getenv("HCAPTCHA_SECRET")
 local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY")
-
 local cookie_secret = os.getenv("COOKIE_SECRET")
 
--- HaProxy Lua is not capable of FQDN resolution :( -- bypased by using alternative core.backends["hcaptcha"].servers["hcaptcha"]:get_addr()
 local captcha_provider_domain = "hcaptcha.com"
---local captcha_provider_ip = utils.resolve_fqdn(captcha_provider_domain)
 
 local body_template = [[
 <!DOCTYPE html>
@@ -81,7 +78,7 @@ function _M.view(applet)
                 local floating_hash = utils.generate_secret(applet, cookie_secret, true)
                 applet:add_header(
                     "set-cookie",
-                    string.format("z_ddos_protection=%s; Max-Age=14400; Path=/", floating_hash)
+                    string.format("z_ddos_captcha=%s; Max-Age=14400; Path=/", floating_hash)
                 )
 --            else
 --                core.Debug("HCAPTCHA FAILED: " .. json.encode(api_response))
@@ -101,9 +98,9 @@ end
 function _M.check_captcha_status(txn)
     local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
     local expected_cookie = utils.generate_secret(txn, cookie_secret)
-    --core.Debug("RECEIVED SECRET COOKIE: " .. parsed_request_cookies["z_ddos_protection"])
+    --core.Debug("RECEIVED SECRET COOKIE: " .. parsed_request_cookies["z_ddos_captcha"])
     --core.Debug("EXPECTED SECRET COOKIE: " .. expected_cookie)
-    if parsed_request_cookies["z_ddos_protection"] == expected_cookie then
+    if parsed_request_cookies["z_ddos_captcha"] == expected_cookie then
         core.Debug("CAPTCHA STATUS CHECK SUCCESS")
         return txn:set_var("txn.captcha_passed", true)
     end
