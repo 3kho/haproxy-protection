@@ -8,10 +8,14 @@ services:
       - 80:80
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
-      - ./haproxy/domains_under_ddos.txt:/usr/local/etc/haproxy/domains_under_ddos.txt
       - ./src/scripts/:/usr/local/etc/haproxy/scripts/
       - ./src/libs/:/usr/local/etc/haproxy/libs/
     environment:
-      - HCAPTCHA_SECRET=0x0000000000000000000000000000000000000000
-      - HCAPTCHA_SITEKEY=10000000-ffff-ffff-ffff-000000000001
-      - COOKIE_SECRET=changeme
+      - HCAPTCHA_SECRET=
+      - HCAPTCHA_SITEKEY=
+      - CAPTCHA_COOKIE_SECRET=
+      - POW_COOKIE_SECRET=
+  nginx:
+    image: "nginx:latest"
+    volumes:
+      - ./js:/usr/share/nginx/html
