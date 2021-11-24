@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 HAPROXY_DDOS_DOMAINS_FILE="/usr/local/etc/haproxy/ddos.map"
+HAPROXY_NOCAPTCHA_DOMAINS_FILE="/usr/local/etc/haproxy/no_captcha.map"
 HAPROXY_GLOBAL_ACL="hdr_cnt"
 HAPROXY_SOCKET="/var/run/haproxy.sock"
 SOCAT="$(which socat)"
@@ -25,6 +26,24 @@ _h_del_acl() {
   echo "del acl #${1} ${2}" | ${SOCAT} ${HAPROXY_SOCKET} stdio
 }
 
+_h_show_map() {
+  local cmd
+  if [[ ${1} ]]; then
+    cmd="show map #${1}"
+  else
+    cmd="show map"
+  fi
+  echo "${cmd}" | ${SOCAT} ${HAPROXY_SOCKET} stdio
+}
+
+_h_add_map() {
+  echo "add map #${1} ${2} ${2}" | ${SOCAT} ${HAPROXY_SOCKET} stdio
+}
+
+_h_del_map() {
+  echo "del map #${1} ${2}" | ${SOCAT} ${HAPROXY_SOCKET} stdio
+}
+
 _help() {
 /bin/cat <<EOF
 Usage: $0 <command> [options]
@@ -45,6 +64,7 @@ Commands:
   $0 domain status <domain>  Get ddos mode status for a domain.
   $0 domain enable <domain>  Enable ddos mode for a domain.
   $0 domain disable <domain> Disable ddos mode for a domain.
+  $0 domain mode <domain> Toggle nocaptcha mode for a domain.
 EOF
 }
 
@@ -66,14 +86,23 @@ _domain_list() {
   _h_show_acl "${domain_acl_id}" | cut -d' ' -f2
 }
 
+_nocaptcha_list() {
+  local nocaptcha_map_id
+  nocaptcha_map_id=$(_h_show_map | grep ${HAPROXY_NOCAPTCHA_DOMAINS_FILE} | cut -d' ' -f1)
+  _h_show_map "${nocaptcha_map_id}" | cut -d' ' -f2
+}
+
 _domain_status() {
   local ddos_domains
+  local nocaptcha_domains
   local global_ddos_acl_id
   local global_ddos_status
 
   ddos_domains="$(_domain_list)"
+  nocaptcha_domains="$(_nocaptcha_list)"
   global_ddos_acl_id=$(_h_show_acl | grep ${HAPROXY_GLOBAL_ACL} | cut -d' ' -f1)
   global_ddos_status=$(_h_show_acl "${global_ddos_acl_id}" | cut -d' ' -f2)
+
 
   if echo "${ddos_domains}" | grep -q "^${1}$"; then
     echo "DDoS-protection mode is enabled for ${1}"
@@ -82,6 +111,9 @@ _domain_status() {
     if [[ ${global_ddos_status} -eq 0 ]]; then
       echo "ATTENTION: DDoS-protection mode is enabled globally"
     fi
+  fi
+  if echo "${nocaptcha_domains}" | grep -q "^${1}$"; then
+    echo "Nocaptcha mode is enabled for ${1}"
   fi
 }
 
@@ -103,6 +135,28 @@ _domain_enable() {
     echo "${1}" >> ${HAPROXY_DDOS_DOMAINS_FILE}
   fi
   echo "DDoS-protection mode was enabled for ${1}"
+}
+
+_domain_changemode() {
+  local nocaptcha_domains
+  local domain_map_id
+
+  nocaptcha_domains="$(_nocaptcha_list)"
+
+  domain_map_id=$(_h_show_acl | grep ${HAPROXY_NOCAPTCHA_DOMAINS_FILE} | cut -d' ' -f1)
+  if echo "${nocaptcha_domains}" | grep -q "^${1}$"; then
+    _h_del_map "${domain_acl_id}" "${1}" &>/dev/null
+    if grep -q "^${1}$" ${HAPROXY_NOCAPTCHA_DOMAINS_FILE}; then
+      sed -i "/^${1}$/d" ${HAPROXY_NOCAPTCHA_DOMAINS_FILE}
+    fi
+    echo "Nocaptcha mode was disabled for ${1}"
+    exit 0
+  fi
+  _h_add_map "${domain_acl_id}" "${1}" &>/dev/null
+  if ! grep -q "^${1}$" ${HAPROXY_NOCAPTCHA_DOMAINS_FILE}; then
+    echo "${1}" >> ${HAPROXY_NOCAPTCHA_DOMAINS_FILE}
+  fi
+  echo "Nocaptcha mode was enabled for ${1}"
 }
 
 _domain_disable() {
@@ -198,6 +252,9 @@ _handle_domain_management() {
       disable)
         _ensure_domain_passed "${2}"
         _domain_disable "${2}";;
+      mode)
+        _ensure_domain_passed "${2}"
+        _domain_changemode "${2}";;
       *) _help; exit 1;;
   esac
 }
