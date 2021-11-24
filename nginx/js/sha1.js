@@ -26,7 +26,7 @@ if (window.Worker) {
 	}
 	const workers = [];
 	for (let i = 0; i < threads; i++) {
-		const shaWorker = new Worker('/worker.js');
+		const shaWorker = new Worker('/js/worker.js');
 		shaWorker.onmessage = messageHandler;
 		workers.push(shaWorker);
 	}

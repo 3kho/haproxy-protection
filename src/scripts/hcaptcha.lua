@@ -51,7 +51,7 @@ local body_template = [[
 			<input type="submit" value="Calculating proof of work..." disabled>
 		</form>
 		<footer>DDoS mitigation by <a href="https://kikeflare.com">KikeFlare</a></footer>
-		<script src="/sha1.js"></script>
+		<script src="/js/sha1.js"></script>
 	</body>
 </html>
 ]]

@@ -18,4 +18,4 @@ services:
   nginx:
     image: "nginx:latest"
     volumes:
-      - ./js:/usr/share/nginx/html
+      - ./nginx:/usr/share/nginx/html
