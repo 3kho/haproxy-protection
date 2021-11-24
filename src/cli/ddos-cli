@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-HAPROXY_DDOS_DOMAINS_FILE="/usr/local/etc/haproxy/domains_under_ddos.txt"
+HAPROXY_DDOS_DOMAINS_FILE="/usr/local/etc/haproxy/ddos.map"
 HAPROXY_GLOBAL_ACL="hdr_cnt"
 HAPROXY_SOCKET="/var/run/haproxy.sock"
 SOCAT="$(which socat)"

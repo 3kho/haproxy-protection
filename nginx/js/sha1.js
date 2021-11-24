@@ -9,7 +9,7 @@ if (window.Worker) {
 		finished = true;
 		workers.forEach(w => w.terminate());
 		const [workerId, answer] = e.data;
-		console.log('Worker', workerId, 'returned answer', answer);
+		console.log('Worker', workerId, 'returned answer', answer, 'in', Date.now()-start+'ms');
 		document.cookie='z_ddos_pow='+answer+';expires=Thu, 31-Dec-37 23:55:55 GMT; path=/;';
 		const dummyTime = 4000 - (Date.now()-start);
 		window.setTimeout(function(){

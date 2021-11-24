@@ -14,6 +14,9 @@ local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 
 local captcha_provider_domain = "hcaptcha.com"
 
+local captcha_map = Map.new("/usr/local/etc/haproxy/no_captcha.map", Map._dom);
+
+-- main page template
 local body_template = [[
 <!DOCTYPE html>
 <html>
@@ -23,6 +26,11 @@ local body_template = [[
 		<style>
 			:root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 		    @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
+		    .b{display:inline-block;background:#6b93f7;border-radius:50%%;margin:10px;height:16px;width:16px;box-shadow:0 0 0 0 #6b93f720;transform:scale(1)}
+		    .b:nth-of-type(1){animation:p 3s infinite}
+		    .b:nth-of-type(2){animation:p 3s .5s infinite}
+		    .b:nth-of-type(3){animation:p 3s 1s infinite}
+		    @keyframes p{0%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f790}70%%{transform:scale(1);box-shadow:0 0 0 10px #6b93f700}100%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f700}}
 		    .h-captcha{min-height:85px;display:block}
 		    .red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
@@ -37,23 +45,34 @@ local body_template = [[
 	</head>
 	<body data-pow="%s">
 		<h3>Checking your browser for robots...</h3>
-		<p>We have detected unusual activity.</p>
-		<p>Solve the captcha to continue.</p>
+		%s
+		%s
 		<noscript>
 			<p class="red">JavaScript is required on this page.</p>
 		</noscript>
+		<footer>Supported by <a href="https://kikeflare.com">KikeFlare</a></footer>
+		<script src="/js/sha1.js"></script>
+	</body>
+</html>
+]]
+
+-- 3 dots animation for proof of work
+local pow_section_template = [[
 		<div>
-			<br>
+			<div class="b"></div>
+			<div class="b"></div>
+			<div class="b"></div>
 		</div>
+]]
+
+-- message, hcaptcha form and submit button
+local captcha_section_template = [[
+		<p>Please solve the captcha to continue.</p>
 		<form class="jsonly" method="POST">
 			<div class="h-captcha" data-sitekey="%s"></div>
 			<script src="https://hcaptcha.com/1/api.js" async defer></script>
 			<input type="submit" value="Calculating proof of work..." disabled>
 		</form>
-		<footer>DDoS mitigation by <a href="https://kikeflare.com">KikeFlare</a></footer>
-		<script src="/js/sha1.js"></script>
-	</body>
-</html>
 ]]
 
 function _M.view(applet)
@@ -61,7 +80,20 @@ function _M.view(applet)
     local response_status_code
     if applet.method == "GET" then
     	generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
-        response_body = string.format(body_template, generated_work, captcha_sitekey)
+    	local captcha_body = ""
+    	local pow_body = ""
+    	local captcha_enabled = false
+	    local host = applet.headers['host'][0]
+		loc = captcha_map:lookup(host);
+		if loc == nil then
+			captcha_enabled = true
+		end
+    	if captcha_enabled then
+			captcha_body = string.format(captcha_section_template, captcha_sitekey)
+    	else
+    		pow_body = pow_section_template
+    	end
+        response_body = string.format(body_template, generated_work, pow_body, captcha_body)
         response_status_code = 403
 	    applet:set_status(response_status_code)
 	    applet:add_header("content-type", "text/html")

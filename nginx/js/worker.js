@@ -18,7 +18,7 @@ onmessage = async function(e) {
 		if(result[challengeIndex] === 0xb0
 			&& middle === true
 			&& result[challengeIndex+difficulty+1] === 0x0b){
-			console.log('Worker thread found solution', challenge, i, result[challengeIndex], result[challengeIndex+1]);
+			console.log('Worker thread found solution:', i);
 			postMessage([id, i]);
 			break;
 		}
