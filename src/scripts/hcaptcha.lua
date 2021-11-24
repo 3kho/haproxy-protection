@@ -26,10 +26,10 @@ local body_template = [[
 		    .h-captcha{min-height:85px;display:block}
 		    .red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
-			body,html{height:100vh}
+			body,html{height:100%%}
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
 			h3,p{margin:3px}
-			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:30vh}
+			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:25vh}
 		</style>
 		<noscript>
 			<style>.jsonly{display:none}</style>
