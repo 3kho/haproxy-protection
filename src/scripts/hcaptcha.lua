@@ -80,7 +80,7 @@ local captcha_section_template = [[
 ]]
 
 function _M.view(applet)
-    local response_body
+    local response_body = ""
     local response_status_code
     if applet.method == "GET" then
     	generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
@@ -97,14 +97,8 @@ function _M.view(applet)
     	else
     		pow_body = pow_section_template
     	end
---	local your_ip = applet.sf:src()
         response_body = string.format(body_template, generated_work, pow_body, captcha_body, ray_id)
         response_status_code = 403
-	    applet:set_status(response_status_code)
-	    applet:add_header("content-type", "text/html; charset=utf-8")
-	    applet:add_header("content-length", string.len(response_body))
-	    applet:start_response()
-	    applet:send(response_body)
     elseif applet.method == "POST" then
         local parsed_body = url.parseQuery(applet.receive(applet))
         if parsed_body["h-captcha-response"] then
@@ -130,15 +124,17 @@ function _M.view(applet)
 --                core.Debug("HCAPTCHA FAILED: " .. json.encode(api_response))
             end
         end
-        response_body = ""
         response_status_code = 302
         applet:add_header("location", applet.qs)
-	    applet:set_status(response_status_code)
-	    applet:add_header("content-type", "text/html; charset=utf-8")
-	    applet:add_header("content-length", string.len(response_body))
-	    applet:start_response()
-	    applet:send(response_body)
+    else
+		--other methods
+        response_status_code = 403
     end
+    applet:set_status(response_status_code)
+    applet:add_header("content-type", "text/html; charset=utf-8")
+    applet:add_header("content-length", string.len(response_body))
+    applet:start_response()
+    applet:send(response_body)
 end
 
 function _M.check_captcha_status(txn)
