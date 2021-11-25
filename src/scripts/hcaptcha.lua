@@ -11,6 +11,7 @@ local captcha_secret = os.getenv("HCAPTCHA_SECRET")
 local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY")
 local hcaptcha_cookie_secret = os.getenv("CAPTCHA_COOKIE_SECRET")
 local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
+local ray_id = os.getenv("RAY_ID")
 
 local captcha_provider_domain = "hcaptcha.com"
 
@@ -37,7 +38,7 @@ local body_template = [[
 			body,html{height:100%%}
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
 			h3,p{margin:3px}
-			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:25vh}
+			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:30vh}
 		</style>
 		<noscript>
 			<style>.jsonly{display:none}</style>
@@ -50,7 +51,10 @@ local body_template = [[
 		<noscript>
 			<p class="red">JavaScript is required on this page.</p>
 		</noscript>
-		<footer>Supported by <a href="https://kikeflare.com">KikeFlare</a></footer>
+		<footer>
+			<p>Protection by <a href="https://kikeflare.com">KikeFlare</a></p>
+			<p>Vey ID: <code>%s</code></p>
+		</footer>
 		<script src="/js/sha1.js"></script>
 	</body>
 </html>
@@ -93,10 +97,11 @@ function _M.view(applet)
     	else
     		pow_body = pow_section_template
     	end
-        response_body = string.format(body_template, generated_work, pow_body, captcha_body)
+--	local your_ip = applet.sf:src()
+        response_body = string.format(body_template, generated_work, pow_body, captcha_body, ray_id)
         response_status_code = 403
 	    applet:set_status(response_status_code)
-	    applet:add_header("content-type", "text/html")
+	    applet:add_header("content-type", "text/html; charset=utf-8")
 	    applet:add_header("content-length", string.len(response_body))
 	    applet:start_response()
 	    applet:send(response_body)
@@ -129,7 +134,7 @@ function _M.view(applet)
         response_status_code = 302
         applet:add_header("location", applet.qs)
 	    applet:set_status(response_status_code)
-	    applet:add_header("content-type", "text/html")
+	    applet:add_header("content-type", "text/html; charset=utf-8")
 	    applet:add_header("content-length", string.len(response_body))
 	    applet:start_response()
 	    applet:send(response_body)
@@ -152,7 +157,6 @@ function _M.check_pow_status(txn)
 	    local iterations = parsed_request_cookies["z_ddos_pow"]
 	    local completed_work = sha.sha1(generated_work .. iterations)
 		local challenge_offset = tonumber(generated_work:sub(1,1),16) * 2
-		--core.Debug(completed_work:sub(challenge_offset+1, challenge_offset+4))
 	    if completed_work:sub(challenge_offset+1, challenge_offset+4) == 'b00b' then -- i dont know lua properly :^)
 	        return txn:set_var("txn.pow_passed", true)
 	    end

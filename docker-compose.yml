@@ -15,6 +15,7 @@ services:
       - HCAPTCHA_SITEKEY=
       - CAPTCHA_COOKIE_SECRET=
       - POW_COOKIE_SECRET=
+      - RAY_ID=
   nginx:
     image: "nginx:latest"
     volumes:
