@@ -124,7 +124,7 @@ function _M.view(applet)
                 local floating_hash = utils.generate_secret(applet, hcaptcha_cookie_secret, true, nil)
                 applet:add_header(
                     "set-cookie",
-                    string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/", floating_hash)
+                    string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", floating_hash)
                 )
 --            else
 --                core.Debug("HCAPTCHA FAILED: " .. json.encode(api_response))
