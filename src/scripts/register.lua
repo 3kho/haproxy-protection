@@ -1,4 +1,4 @@
-package.path = package.path  .. "./?.lua;/usr/local/etc/haproxy/scripts/?.lua;/usr/local/etc/haproxy/libs/?.lua"
+package.path = package.path  .. "./?.lua;/etc/haproxy/scripts/?.lua;/etc/haproxy/libs/?.lua"
 
 local hcaptcha = require("hcaptcha")
 

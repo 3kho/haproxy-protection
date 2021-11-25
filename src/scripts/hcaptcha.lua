@@ -14,7 +14,7 @@ local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 
 local captcha_provider_domain = "hcaptcha.com"
 
-local captcha_map = Map.new("/usr/local/etc/haproxy/no_captcha.map", Map._dom);
+local captcha_map = Map.new("/etc/haproxy/no_captcha.map", Map._dom);
 
 -- main page template
 local body_template = [[
@@ -152,6 +152,7 @@ function _M.check_pow_status(txn)
 	    local iterations = parsed_request_cookies["z_ddos_pow"]
 	    local completed_work = sha.sha1(generated_work .. iterations)
 		local challenge_offset = tonumber(generated_work:sub(1,1),16) * 2
+		--core.Debug(completed_work:sub(challenge_offset+1, challenge_offset+4))
 	    if completed_work:sub(challenge_offset+1, challenge_offset+4) == 'b00b' then -- i dont know lua properly :^)
 	        return txn:set_var("txn.pow_passed", true)
 	    end

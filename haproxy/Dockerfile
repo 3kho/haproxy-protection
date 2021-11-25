@@ -68,8 +68,8 @@ RUN set -eux; \
 	eval "make -C /usr/src/haproxy -j '$nproc' all $makeOpts"; \
 	eval "make -C /usr/src/haproxy install-bin $makeOpts"; \
 	\
-	mkdir -p /usr/local/etc/haproxy; \
-	cp -R /usr/src/haproxy/examples/errorfiles /usr/local/etc/haproxy/errors; \
+	mkdir -p /etc/haproxy; \
+	cp -R /usr/src/haproxy/examples/errorfiles /etc/haproxy/errors; \
 	rm -rf /usr/src/haproxy; \
 	\
 	apt-mark auto '.*' > /dev/null; \
@@ -102,4 +102,4 @@ RUN apt-get update && apt-get install socat dnsutils -y
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # no USER for backwards compatibility (to try to avoid breaking existing users)
-CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+CMD ["haproxy", "-f", "/etc/haproxy/haproxy.cfg"]

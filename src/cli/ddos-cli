@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-HAPROXY_DDOS_DOMAINS_FILE="/usr/local/etc/haproxy/ddos.map"
-HAPROXY_NOCAPTCHA_DOMAINS_FILE="/usr/local/etc/haproxy/no_captcha.map"
+HAPROXY_DDOS_DOMAINS_FILE="/etc/haproxy/ddos.map"
+HAPROXY_NOCAPTCHA_DOMAINS_FILE="/etc/haproxy/no_captcha.map"
 HAPROXY_GLOBAL_ACL="hdr_cnt"
 HAPROXY_SOCKET="/var/run/haproxy.sock"
 SOCAT="$(which socat)"

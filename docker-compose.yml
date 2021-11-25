@@ -7,9 +7,9 @@ services:
     ports:
       - 80:80
     volumes:
-      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
-      - ./src/scripts/:/usr/local/etc/haproxy/scripts/
-      - ./src/libs/:/usr/local/etc/haproxy/libs/
+      - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
+      - ./src/scripts/:/etc/haproxy/scripts/
+      - ./src/libs/:/etc/haproxy/libs/
     environment:
       - HCAPTCHA_SECRET=
       - HCAPTCHA_SITEKEY=
