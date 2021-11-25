@@ -21,6 +21,7 @@ Add some env vars to docker-compose file:
 - HCAPTCHA_SECRET - your hcaptcha secret key
 - CAPTCHA_COOKIE_SECRET - random string, a salt for cookies
 - POW_COOKIE_SECRET - random string a salt for cookies
+- RAY_ID - string to identify the haproxy node by
 
 
 Run docker compose:
@@ -40,6 +41,7 @@ Before installing the tool, ensure that HaProxy is built with Lua support.
 - Copy [libs](src/libs) to a path where Lua looks for modules.
 - Copy [ddos-cli](src/cli/ddos-cli) to any convenient path.
 - Create `/etc/haproxy/domains_under_ddos.txt` with write permissions for HaProxy (feel free to change the map file path, update the HaProxy config correspondingly)
+- If you want to try with tor, change the haproxy mount in docker-compose to the haproxy/haproxy.tor.cfg and include your hidden_service folder (with keys, etc) in the tor folder
 
 #### CLI
 The system comes with CLI. It can be used to manage global and per-domain protection.
@@ -50,18 +52,20 @@ Usage: ddos-cli <command> [options]
 Command line interface to manage per-domain and global DDoS protection.
 
 optional arguments:
-  -h, --help                         Show this help message and exit.
+  -h, --help                 Show this help message and exit.
 
 Commands:
- Global management:
-  ddos-cli global status             Show status of global server ddos mode.
-  ddos-cli global enable             Enable global ddos mode.
-  ddos-cli global disable            Disable global ddos mode.
+  Global management:
+  src/cli/ddos-cli global status           Show status of global server ddos mode.
+  src/cli/ddos-cli global enable           Enable global ddos mode.
+  src/cli/ddos-cli global disable          Disable global ddos mode.
 
- Domain management:
-  ddos-cli domain list               List all domains with ddos mode on.
-  ddos-cli domain status <domain>    Get ddos mode status for a domain.
-  ddos-cli domain enable <domain>    Enable ddos mode for a domain.
-  ddos-cli domain disable <domain>   Disable ddos mode for a domain.
+  Domain management:
+  src/cli/ddos-cli domain list             List all domains with ddos mode on.
+  src/cli/ddos-cli domain nocaptcha             List all domains with nocaptcha mode on.
+  src/cli/ddos-cli domain status <domain>  Get ddos mode status for a domain.
+  src/cli/ddos-cli domain enable <domain>  Enable ddos mode for a domain.
+  src/cli/ddos-cli domain disable <domain> Disable ddos mode for a domain.
+  src/cli/ddos-cli domain mode <domain> Toggle nocaptcha mode for a domain.
 
-```
+ ```
