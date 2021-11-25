@@ -11,6 +11,7 @@ Some issues fixed and various improvements:
 - Added additional proof-of-work element to the challenge page, both pow+captcha must be completed
 - Avoid using a hack to resolve domain names, usea backend in haproxy instead
 - Improved the appearance of the challenge page
+- More options to CLI for nocaptcha
 
 #### How to test
 
