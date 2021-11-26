@@ -13,7 +13,7 @@ if (window.Worker) {
 	const challenge = document.querySelector('[data-pow]').dataset.pow;
 	const difficulty = 0;
 	const start = Date.now();
-	const threads = window.navigator.hardwareConcurrency-1;
+	const threads = Math.max(1,Math.floor(window.navigator.hardwareConcurrency/2));
 	let finished = false;
 	const messageHandler = (e) => {
 		if (finished) { return; }
