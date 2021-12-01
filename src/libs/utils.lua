@@ -2,19 +2,19 @@ local _M = {}
 
 local sha = require("sha")
 local secret_bucket_duration = 43200 -- 60 * 60 * 12 -- 12 hours
-
+require("print_r")
 function _M.generate_secret(context, salt, is_applet, iterations)
 	local start_sec = core.now()['sec']
 	local bucket = start_sec - (start_sec % secret_bucket_duration)
 	local ip = context.sf:src()
 	local user_agent = ""
---TODO: fix bug here making this not be same value
---	if is_applet == true then
---		user_agent = context.headers['user-agent'] or {}
---		user_agent = user_agent[0]
---	else
---		user_agent = context.sf:req_hdr('user-agent')
---	end
+	if is_applet == true then
+		user_agent = context.headers['user-agent'] or {}
+		user_agent = user_agent[0]
+	else
+		--note req_fhdr not req_hdr otherwise commas in useragent become a delimiter
+		user_agent = context.sf:req_fhdr('user-agent')
+	end
 	if iterations == nil then
 		--hcaptcha secret is just this
 		return context.sc:xxh32(salt .. bucket .. ip .. user_agent)
