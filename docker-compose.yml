@@ -8,6 +8,8 @@ services:
     build:
       context: ./
       dockerfile: haproxy/Dockerfile
+    ports:
+      - 80:80
     volumes:
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
       - ./haproxy/ddos.map:/etc/haproxy/ddos.map
