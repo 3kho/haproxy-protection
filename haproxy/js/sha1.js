@@ -13,7 +13,7 @@ if (window.Worker && crypto.subtle) {
 	const challenge = document.querySelector('[data-pow]').dataset.pow;
 	const difficulty = 0;
 	const start = Date.now();
-	const threads = Math.max(1,Math.floor(window.navigator.hardwareConcurrency/2));
+	const threads = Math.min(4,Math.ceil(window.navigator.hardwareConcurrency/2));
 	let finished = false;
 	const messageHandler = (e) => {
 		if (finished) { return; }
