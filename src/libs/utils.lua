@@ -1,8 +1,8 @@
 local _M = {}
 
 local sha = require("sha")
-local secret_bucket_duration = 43200 -- 60 * 60 * 12 -- 12 hours
-require("print_r")
+local secret_bucket_duration = tonumber(os.getenv("BUCKET_DURATION"))
+
 function _M.generate_secret(context, salt, is_applet, iterations)
 	local start_sec = core.now()['sec']
 	local bucket = start_sec - (start_sec % secret_bucket_duration)

@@ -23,6 +23,7 @@ services:
       - CAPTCHA_COOKIE_SECRET=
       - POW_COOKIE_SECRET=
       - RAY_ID=
+      - BUCKET_DURATION=43200
   nginx:
     image: "nginx:latest"
     volumes:
