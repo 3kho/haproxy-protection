@@ -9,11 +9,12 @@ services:
       context: ./
       dockerfile: haproxy/Dockerfile
     ports:
-      - 80:80
+      - 80:80 #http
+      - 2000:2000 #port 2000 haproxy socket for external management
     volumes:
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
       - ./haproxy/ddos.map:/etc/haproxy/ddos.map
-      - ./haproxy/no_captcha.map:/etc/haproxy/no_captcha.map
+      - ./haproxy/hosts.map:/etc/haproxy/hosts.map
       - ./src/scripts/:/etc/haproxy/scripts/
       - ./src/libs/:/etc/haproxy/libs/
       - ./haproxy/js/:/var/www/js/

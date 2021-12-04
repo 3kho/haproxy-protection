@@ -14,6 +14,7 @@ Some issues fixed and various improvements:
 - Fix resolving domain of hcaptcha, no longer uses a hack
 - Fix multiple security issues that could result in bypassing the captcha
 - Fix challenge cookies lasting forever, they are now limited by a bucket duration on server side
+- Ability to set values for domains (or domain+path!) to select off, pow, or captcha and override for paths over domains
 
 #### Screenshot
 
@@ -29,6 +30,7 @@ Add some env vars to docker-compose file:
 - CAPTCHA_COOKIE_SECRET - random string, a salt for captcha cookies
 - POW_COOKIE_SECRET - different random string, a salt for pow cookies
 - RAY_ID - string to identify the haproxy node by
+- BUCKET_DURATION - how long between bucket changes, invalidating cookies
 
 Run docker compose:
 ```bash
@@ -41,19 +43,12 @@ DDoS-protection mode is enabled by default.
 
 #### Installation
 
-Before installing the tool, ensure that HaProxy is built with Lua support (in package and ubuntu recommended PPA, it is.)
+Before installing the tool, ensure that HAProxy is built with Lua support (in debian package and ubuntu recommended PPA, it is.)
 
 - Copy haproxy config and make sure that `lua-load` directive contains absolute path to [register.lua](src/scripts/register.lua)
 - Copy or link [scripts](src/scripts) to /etc/haproxy/scripts
 - Copy or link [libs](src/libs) to /etc/haproxy/libs (or a path where Lua looks for modules).
-- Create `/etc/haproxy/ddos.map` for domains with protection mode enabled
-- Create `/etc/haproxy/no_captcha.map` for domains with no captcha, only pow
-
-If you want to try with tor and haproxy PROXY mode:
-- Uncomment the tor service in `docker-compose.yml`
-- Change the haproxy mount in `docker-compose.yml` for haproxy.cfg to haproxy.tor.cfg
-- Add your hidden service folder (with keys, etc) to `tor/hidden_service`
-- Run `docker-compose build` to rebuild the tor container with it.
+- Create `/etc/haproxy/ddos.map` for domains or paths with protection mode enabled
 
 #### CLI
 The system comes with CLI. It can be used to manage protection global/per-domain and control nocaptcha mode.

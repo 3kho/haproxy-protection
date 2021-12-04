@@ -15,7 +15,7 @@ local ray_id = os.getenv("RAY_ID")
 
 local captcha_provider_domain = "hcaptcha.com"
 
-local captcha_map = Map.new("/etc/haproxy/no_captcha.map", Map._dom);
+local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
 
 -- main page template
 local body_template = [[
@@ -83,20 +83,35 @@ function _M.view(applet)
     local response_body = ""
     local response_status_code
     if applet.method == "GET" then
+
+		-- get challenge string for proof of work
     	generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
+
+		-- define body sections
     	local captcha_body = ""
     	local pow_body = ""
+
+		-- pretty much same as decice_checks but path is different. todo: refactor and pass the applet, with some ifs for applet vs txn
     	local captcha_enabled = false
 	    local host = applet.headers['host'][0]
-		loc = captcha_map:lookup(host);
-		if loc == nil then
+		local domain_lookup = captcha_map:lookup(host) or 0
+		domain_lookup = tonumber(domain_lookup)
+		local path = applet.qs; --because on /bot-check?/whatever, .qs (query string) holds the "path"
+		local path_lookup = captcha_map:lookup(host..path) or 0
+		path_lookup = tonumber(path_lookup)
+		if (path_lookup == 2 and path_lookup >= domain_lookup) or domain_lookup == 2 then
 			captcha_enabled = true
 		end
+		--
+
+		-- pow at least is always enabled when reaching bot-check page
     	if captcha_enabled then
 			captcha_body = string.format(captcha_section_template, captcha_sitekey)
     	else
     		pow_body = pow_section_template
     	end
+
+		-- sub in the body sections
         response_body = string.format(body_template, generated_work, pow_body, captcha_body, ray_id)
         response_status_code = 403
     elseif applet.method == "POST" then
@@ -120,14 +135,13 @@ function _M.view(applet)
                     "set-cookie",
                     string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", floating_hash)
                 )
---            else
---                core.Debug("HCAPTCHA FAILED: " .. json.encode(api_response))
             end
         end
+		-- if failed captcha, will just get sent back here so 302 is fine
         response_status_code = 302
         applet:add_header("location", applet.qs)
     else
-		--other methods
+		-- other methods
         response_status_code = 403
     end
     applet:set_status(response_status_code)
@@ -137,15 +151,35 @@ function _M.view(applet)
     applet:send(response_body)
 end
 
+-- decide which checks to do based on domain and path and domain acls
+function _M.decide_checks_necessary(txn)
+    local host = txn.sf:hdr("Host")
+	local domain_lookup = captcha_map:lookup(host) or 0
+	domain_lookup = tonumber(domain_lookup)
+	local path = txn.sf:path();
+	local path_lookup = captcha_map:lookup(host..path) or 0
+	path_lookup = tonumber(path_lookup)
+	-- probably should make this check less shit
+	if (path_lookup == 2 and path_lookup >= domain_lookup) or domain_lookup == 2 then
+		-- check both if captcha mode enabled
+		txn:set_var("txn.validate_captcha", true)
+		txn:set_var("txn.validate_pow", true)
+	elseif (path_lookup == 1 and path_lookup >= domain_lookup) or domain_lookup == 1 then
+		-- only check pow if mode=1
+		txn:set_var("txn.validate_pow", true)
+	end
+end
+
+-- check if captcha token is valid, separate secret from POW
 function _M.check_captcha_status(txn)
     local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
     local expected_cookie = utils.generate_secret(txn, hcaptcha_cookie_secret, false, nil)
     if parsed_request_cookies["z_ddos_captcha"] == expected_cookie then
-        --core.Debug("CAPTCHA STATUS CHECK SUCCESS")
         return txn:set_var("txn.captcha_passed", true)
     end
 end
 
+-- check if pow token is valid
 function _M.check_pow_status(txn)
     local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
     if parsed_request_cookies["z_ddos_pow"] then
