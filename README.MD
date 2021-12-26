@@ -31,6 +31,8 @@ Add some env vars to docker-compose file:
 - POW_COOKIE_SECRET - different random string, a salt for pow cookies
 - RAY_ID - string to identify the haproxy node by
 - BUCKET_DURATION - how long between bucket changes, invalidating cookies
+- BACKEND_NAME - name of backend to build from hosts.map
+- SERVER_PREFIX - prefix of server names i.e. <prefix>n where n is the number, in server-template
 
 Run docker compose:
 ```bash

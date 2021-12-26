@@ -14,8 +14,27 @@ local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 local ray_id = os.getenv("RAY_ID")
 
 local captcha_provider_domain = "hcaptcha.com"
-
 local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
+
+function _M.setup_servers()
+	local backend_name = os.getenv("BACKEND_NAME")
+	local server_prefix = os.getenv("SERVER_PREFIX")
+	local hosts_map = Map.new("/etc/haproxy/hosts.map", Map._str);
+	local backends_map = Map.new("/etc/haproxy/backends.map", Map._str);
+	local handle = io.open("/etc/haproxy/hosts.map", "r")
+	local line = handle:read("*line")
+	local counter = 1
+	while line do
+		local hostname, backend_address = line:match("([^%s]+)%s+([^%s]+)")
+		core.set_map("/etc/haproxy/backends.map", hostname, "websrv"..counter)
+		local proxy = core.proxies[backend_name].servers[server_prefix..counter]
+		proxy:set_addr(backend_address)
+		proxy:set_ready()
+		line = handle:read("*line")
+		counter = counter + 1
+	end
+	handle:close()
+end
 
 -- main page template
 local body_template = [[
