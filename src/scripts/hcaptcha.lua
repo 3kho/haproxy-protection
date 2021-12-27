@@ -16,7 +16,6 @@ local ray_id = os.getenv("RAY_ID")
 local captcha_provider_domain = "hcaptcha.com"
 local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
 
-require("print_r")
 function _M.setup_servers()
 	local backend_name = os.getenv("BACKEND_NAME")
 	local server_prefix = os.getenv("SERVER_PREFIX")
