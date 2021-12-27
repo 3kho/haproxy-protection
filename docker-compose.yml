@@ -12,12 +12,14 @@ services:
     ports:
       - 80:80 #http
       - 2000:2000 #port 2000 haproxy socket for external management
+      - 2001:2001 #dataplaneapi
     volumes:
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
       - ./haproxy/ddos.map:/etc/haproxy/ddos.map
       - ./haproxy/hosts.map:/etc/haproxy/hosts.map
       - ./haproxy/backends.map:/etc/haproxy/backends.map
       - ./haproxy/blocked.map:/etc/haproxy/blocked.map
+      - ./haproxy/dataplaneapi.hcl:/etc/haproxy/dataplaneapi.hcl
       - ./src/scripts/:/etc/haproxy/scripts/
       - ./src/libs/:/etc/haproxy/libs/
       - ./haproxy/js/:/var/www/js/
@@ -28,8 +30,8 @@ services:
       - POW_COOKIE_SECRET=
       - RAY_ID=
       - BUCKET_DURATION=43200
-      - BACKEND_NAME="servers"
-      - SERVER_PREFIX="websrv"
+      - BACKEND_NAME=servers
+      - SERVER_PREFIX=websrv
   nginx:
     ports:
       - 81:80

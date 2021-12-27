@@ -16,19 +16,22 @@ local ray_id = os.getenv("RAY_ID")
 local captcha_provider_domain = "hcaptcha.com"
 local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
 
+require("print_r")
 function _M.setup_servers()
 	local backend_name = os.getenv("BACKEND_NAME")
 	local server_prefix = os.getenv("SERVER_PREFIX")
 	local hosts_map = Map.new("/etc/haproxy/hosts.map", Map._str);
-	local backends_map = Map.new("/etc/haproxy/backends.map", Map._str);
 	local handle = io.open("/etc/haproxy/hosts.map", "r")
 	local line = handle:read("*line")
 	local counter = 1
 	while line do
-		local hostname, backend_address = line:match("([^%s]+)%s+([^%s]+)")
-		core.set_map("/etc/haproxy/backends.map", hostname, "websrv"..counter)
+		local domain, backend_host = line:match("([^%s]+)%s+([^%s]+)")
+		local port_index = backend_host:match'^.*():'
+		local backend_hostname = backend_host:sub(0, port_index-1)
+		local backend_port = backend_host:sub(port_index + 1)
+		core.set_map("/etc/haproxy/backends.map", domain, server_prefix..counter)
 		local proxy = core.proxies[backend_name].servers[server_prefix..counter]
-		proxy:set_addr(backend_address)
+		proxy:set_addr(backend_hostname, backend_port)
 		proxy:set_ready()
 		line = handle:read("*line")
 		counter = counter + 1

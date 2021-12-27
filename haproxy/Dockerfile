@@ -39,6 +39,11 @@ RUN set -eux; \
 	; \
 	rm -rf /var/lib/apt/lists/*; \
 	\
+	wget -O dataplaneapi_2.4.4_Linux_x86_64.tar.gz https://github.com/haproxytech/dataplaneapi/releases/download/v2.4.4/dataplaneapi_2.4.4_Linux_x86_64.tar.gz; \
+	tar -zxvf dataplaneapi_2.4.4_Linux_x86_64.tar.gz; \
+	chmod +x build/dataplaneapi; \
+	cp build/dataplaneapi /usr/local/bin/; \
+	\
 	wget -O haproxy.tar.gz "$HAPROXY_URL"; \
 	echo "$HAPROXY_SHA256 *haproxy.tar.gz" | sha256sum -c; \
 	mkdir -p /usr/src/haproxy; \
