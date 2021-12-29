@@ -19,6 +19,9 @@ local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
 function _M.setup_servers()
 	local backend_name = os.getenv("BACKEND_NAME")
 	local server_prefix = os.getenv("SERVER_PREFIX")
+	if backend_name == nil or server_prefix == nil then
+		return;
+	end
 	local hosts_map = Map.new("/etc/haproxy/hosts.map", Map._str);
 	local handle = io.open("/etc/haproxy/hosts.map", "r")
 	local line = handle:read("*line")
