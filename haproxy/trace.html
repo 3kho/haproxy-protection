@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>trace</title>
+</head>
+<body>
+<pre>
+ts=%Ts
+h=%[hdr(host)]
+ip=%ci
+uag=%[hdr(user-agent)]
+http=%HV
+tls=%[ssl_fc]
+tlsv=%sslv
+sni=%[ssl_fc_sni]
+vey_id=%[env(RAY_ID)]
+bucket=%[env(BUCKET_DURATION)]
+</pre>
+</body>
+</html>

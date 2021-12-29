@@ -20,6 +20,7 @@ services:
       - ./haproxy/backends.map:/etc/haproxy/backends.map
       - ./haproxy/blocked.map:/etc/haproxy/blocked.map
       - ./haproxy/dataplaneapi.hcl:/etc/haproxy/dataplaneapi.hcl
+      - ./haproxy/trace.html:/etc/haproxy/trace.html
       - ./src/scripts/:/etc/haproxy/scripts/
       - ./src/libs/:/etc/haproxy/libs/
       - ./haproxy/js/:/var/www/js/
@@ -28,7 +29,7 @@ services:
       - HCAPTCHA_SITEKEY=
       - CAPTCHA_COOKIE_SECRET=
       - POW_COOKIE_SECRET=
-      - RAY_ID=
+      - RAY_ID=docker
       - BUCKET_DURATION=43200
       - BACKEND_NAME=servers
       - SERVER_PREFIX=websrv
