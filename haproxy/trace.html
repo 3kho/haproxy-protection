@@ -9,7 +9,7 @@
 ts=%Ts
 h=%[hdr(host)]
 ip=%ci
-uag=%[hdr(user-agent)]
+uag=%[req.fhdr(user-agent)]
 http=%HV
 tls=%[ssl_fc]
 tlsv=%sslv
