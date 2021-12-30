@@ -1,7 +1,6 @@
 _M = {}
 
 local url = require("url")
-local http = require("http")
 local utils = require("utils")
 local cookie = require("cookie")
 local json = require("json")
@@ -141,16 +140,28 @@ function _M.view(applet)
     elseif applet.method == "POST" then
         local parsed_body = url.parseQuery(applet.receive(applet))
         if parsed_body["h-captcha-response"] then
-            local url = string.format(
-                "https://%s/siteverify?secret=%s&response=%s",
-                core.backends["hcaptcha"].servers["hcaptcha"]:get_addr(),
-                captcha_secret,
-                parsed_body["h-captcha-response"]
-            )
-            local res, err = http.get{url=url, headers={host=captcha_provider_domain} }
-            local status, api_response = pcall(res.json, res)
+            local hcaptcha_url = string.format(
+                "https://%s/siteverify",
+                core.backends["hcaptcha"].servers["hcaptcha"]:get_addr()
+  			)
+			local hcaptcha_body = json.encode({
+				secret=captcha_secret,
+				response=parsed_body["h-captcha-response"]
+			})
+			local httpclient = core.httpclient()
+			local res = httpclient:post{
+				url=hcaptcha_url,
+				body=hcaptcha_body,
+				headers={
+					[ "host" ] = { captcha_provider_domain },
+					[ "content-type" ] = { "application/json" }
+				}
+			}
+			local status, api_response = pcall(json.decode, res.body)
+			--require("print_r")
+			--print_r(res)
+			--print_r(api_response)
             if not status then
-                local original_error = api_response
                 api_response = {}
             end
             if api_response.success == true then
