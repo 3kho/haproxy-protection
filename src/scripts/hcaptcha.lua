@@ -141,13 +141,16 @@ function _M.view(applet)
     elseif applet.method == "POST" then
         local parsed_body = url.parseQuery(applet.receive(applet))
         if parsed_body["h-captcha-response"] then
-            local url = string.format(
-                "https://%s/siteverify?secret=%s&response=%s",
-                core.backends["hcaptcha"].servers["hcaptcha"]:get_addr(),
+            local hcaptcha_url = string.format(
+                "https://%s/siteverify",
+                core.backends["hcaptcha"].servers["hcaptcha"]:get_addr()
+            )
+			local hcaptcha_data = string.format(
+				"secret=%s&response=%s",
                 captcha_secret,
                 parsed_body["h-captcha-response"]
-            )
-            local res, err = http.get{url=url, headers={host=captcha_provider_domain} }
+			)
+            local res, err = http.post({data=hcaptcha_data, url=hcaptcha_url, headers={host=captcha_provider_domain, ["content-type"]="application/x-www-form-urlencoded"} })
             local status, api_response = pcall(res.json, res)
             if not status then
                 local original_error = api_response
