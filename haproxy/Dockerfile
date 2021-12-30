@@ -17,9 +17,9 @@ RUN set -eux; \
 		--uid 99 \
 		haproxy
 
-ENV HAPROXY_VERSION 2.3.10
-ENV HAPROXY_URL https://www.haproxy.org/download/2.3/src/haproxy-2.3.10.tar.gz
-ENV HAPROXY_SHA256 9946e0cfc83f29072b3431e37246221cf9d4a9d28a158c075714d345266f4f35
+ENV HAPROXY_VERSION 2.5.0
+ENV HAPROXY_URL http://www.haproxy.org/download/2.5/src/haproxy-2.5.0.tar.gz
+ENV HAPROXY_SHA256 16a5ed6256ca3670e41b76366a892b08485643204a3ce72b6e7a2d9a313aa225
 
 # see https://sources.debian.net/src/haproxy/jessie/debian/rules/ for some helpful navigation of the possible "make" arguments
 RUN set -eux; \
@@ -57,11 +57,6 @@ RUN set -eux; \
 		USE_OPENSSL=1 \
 		USE_PCRE2=1 USE_PCRE2_JIT=1 \
 		USE_ZLIB=1 \
-		\
-		EXTRA_OBJS=" \
-# see https://github.com/docker-library/haproxy/issues/94#issuecomment-505673353 for more details about prometheus support
-			contrib/prometheus-exporter/service-prometheus.o \
-		" \
 	'; \
 # https://salsa.debian.org/haproxy-team/haproxy/-/commit/53988af3d006ebcbf2c941e34121859fd6379c70
 	dpkgArch="$(dpkg --print-architecture)"; \
