@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>trace</title>
-</head>
-<body>
-<pre>
-ts=%Ts
+ts=%Ts.%ms
 h=%[hdr(host)]
 ip=%ci
 uag=%[req.fhdr(user-agent)]
@@ -16,6 +8,3 @@ tlsv=%sslv
 sni=%[ssl_fc_sni]
 vey_id=%[env(RAY_ID)]
 bucket=%[env(BUCKET_DURATION)]
-</pre>
-</body>
-</html>
