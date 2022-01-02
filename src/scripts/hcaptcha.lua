@@ -50,14 +50,14 @@ local body_template = [[
 		<title>Hold on...</title>
 		<style>
 			:root{--text-color:#c5c8c6;--bg-color:#1d1f21}
-		    @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
-		    .b{display:inline-block;background:#6b93f7;border-radius:50%%;margin:10px;height:16px;width:16px;box-shadow:0 0 0 0 #6b93f720;transform:scale(1)}
-		    .b:nth-of-type(1){animation:p 3s infinite}
-		    .b:nth-of-type(2){animation:p 3s .5s infinite}
-		    .b:nth-of-type(3){animation:p 3s 1s infinite}
-		    @keyframes p{0%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f790}70%%{transform:scale(1);box-shadow:0 0 0 10px #6b93f700}100%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f700}}
-		    .h-captcha{min-height:85px;display:block}
-		    .red{color:red;font-weight:bold}
+			@media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
+			.b{display:inline-block;background:#6b93f7;border-radius:50%%;margin:10px;height:16px;width:16px;box-shadow:0 0 0 0 #6b93f720;transform:scale(1)}
+			.b:nth-of-type(1){animation:p 3s infinite}
+			.b:nth-of-type(2){animation:p 3s .5s infinite}
+			.b:nth-of-type(3){animation:p 3s 1s infinite}
+			@keyframes p{0%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f790}70%%{transform:scale(1);box-shadow:0 0 0 10px #6b93f700}100%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f700}}
+			.h-captcha{min-height:85px;display:block}
+			.red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%}
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
@@ -104,20 +104,20 @@ local captcha_section_template = [[
 ]]
 
 function _M.view(applet)
-    local response_body = ""
-    local response_status_code
-    if applet.method == "GET" then
+	local response_body = ""
+	local response_status_code
+	if applet.method == "GET" then
 
 		-- get challenge string for proof of work
-    	generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
+		generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
 
 		-- define body sections
-    	local captcha_body = ""
-    	local pow_body = ""
+		local captcha_body = ""
+		local pow_body = ""
 
 		-- pretty much same as decice_checks but path is different. todo: refactor and pass the applet, with some ifs for applet vs txn
-    	local captcha_enabled = false
-	    local host = applet.headers['host'][0]
+		local captcha_enabled = false
+		local host = applet.headers['host'][0]
 		local domain_lookup = captcha_map:lookup(host) or 0
 		domain_lookup = tonumber(domain_lookup)
 		local path = applet.qs; --because on /bot-check?/whatever, .qs (query string) holds the "path"
@@ -129,58 +129,65 @@ function _M.view(applet)
 		--
 
 		-- pow at least is always enabled when reaching bot-check page
-    	if captcha_enabled then
+		if captcha_enabled then
 			captcha_body = string.format(captcha_section_template, captcha_sitekey)
-    	else
-    		pow_body = pow_section_template
-    	end
+		else
+			pow_body = pow_section_template
+		end
 
 		-- sub in the body sections
-        response_body = string.format(body_template, generated_work, pow_body, captcha_body, ray_id)
-        response_status_code = 403
-    elseif applet.method == "POST" then
-        local parsed_body = url.parseQuery(applet.receive(applet))
-        if parsed_body["h-captcha-response"] then
-            local hcaptcha_url = string.format(
-                "https://%s/siteverify",
-                core.backends["hcaptcha"].servers["hcaptcha"]:get_addr()
-            )
+		response_body = string.format(body_template, generated_work, pow_body, captcha_body, ray_id)
+		response_status_code = 403
+	elseif applet.method == "POST" then
+		local parsed_body = url.parseQuery(applet.receive(applet))
+		if parsed_body["h-captcha-response"] then
+			local hcaptcha_url = string.format(
+				"https://%s/siteverify",
+				core.backends["hcaptcha"].servers["hcaptcha"]:get_addr()
+			)
 			local hcaptcha_data = string.format(
 				"secret=%s&response=%s",
-                captcha_secret,
-                parsed_body["h-captcha-response"]
+				captcha_secret,
+				parsed_body["h-captcha-response"]
 			)
-            local res, err = http.post({data=hcaptcha_data, url=hcaptcha_url, headers={host=captcha_provider_domain, ["content-type"]="application/x-www-form-urlencoded"} })
-            local status, api_response = pcall(res.json, res)
-            if not status then
-                local original_error = api_response
-                api_response = {}
-            end
-            if api_response.success == true then
-                local floating_hash = utils.generate_secret(applet, hcaptcha_cookie_secret, true, nil)
-                applet:add_header(
-                    "set-cookie",
-                    string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", floating_hash)
-                )
-            end
-        end
+			local res, err = http.post({
+				data=hcaptcha_data,
+				url=hcaptcha_url,
+				headers={
+					host=captcha_provider_domain,
+					["content-type"]="application/x-www-form-urlencoded"
+				}
+			})
+			local status, api_response = pcall(res.json, res)
+			if not status then
+				local original_error = api_response
+				api_response = {}
+			end
+			if api_response.success == true then
+				local floating_hash = utils.generate_secret(applet, hcaptcha_cookie_secret, true, nil)
+				applet:add_header(
+					"set-cookie",
+					string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", floating_hash)
+				)
+			end
+		end
 		-- if failed captcha, will just get sent back here so 302 is fine
-        response_status_code = 302
-        applet:add_header("location", applet.qs)
-    else
+		response_status_code = 302
+		applet:add_header("location", applet.qs)
+	else
 		-- other methods
-        response_status_code = 403
-    end
-    applet:set_status(response_status_code)
-    applet:add_header("content-type", "text/html; charset=utf-8")
-    applet:add_header("content-length", string.len(response_body))
-    applet:start_response()
-    applet:send(response_body)
+		response_status_code = 403
+	end
+	applet:set_status(response_status_code)
+	applet:add_header("content-type", "text/html; charset=utf-8")
+	applet:add_header("content-length", string.len(response_body))
+	applet:start_response()
+	applet:send(response_body)
 end
 
 -- decide which checks to do based on domain and path and domain acls
 function _M.decide_checks_necessary(txn)
-    local host = txn.sf:hdr("Host")
+	local host = txn.sf:hdr("Host")
 	local domain_lookup = captcha_map:lookup(host) or 0
 	domain_lookup = tonumber(domain_lookup)
 	local path = txn.sf:path();
@@ -199,24 +206,24 @@ end
 
 -- check if captcha token is valid, separate secret from POW
 function _M.check_captcha_status(txn)
-    local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-    local expected_cookie = utils.generate_secret(txn, hcaptcha_cookie_secret, false, nil)
-    if parsed_request_cookies["z_ddos_captcha"] == expected_cookie then
-        return txn:set_var("txn.captcha_passed", true)
-    end
+	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
+	local expected_cookie = utils.generate_secret(txn, hcaptcha_cookie_secret, false, nil)
+	if parsed_request_cookies["z_ddos_captcha"] == expected_cookie then
+		return txn:set_var("txn.captcha_passed", true)
+	end
 end
 
 -- check if pow token is valid
 function _M.check_pow_status(txn)
-    local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-    if parsed_request_cookies["z_ddos_pow"] then
-	    local generated_work = utils.generate_secret(txn, pow_cookie_secret, false, "")
-	    local iterations = parsed_request_cookies["z_ddos_pow"]
-	    local completed_work = sha.sha1(generated_work .. iterations)
+	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
+	if parsed_request_cookies["z_ddos_pow"] then
+		local generated_work = utils.generate_secret(txn, pow_cookie_secret, false, "")
+		local iterations = parsed_request_cookies["z_ddos_pow"]
+		local completed_work = sha.sha1(generated_work .. iterations)
 		local challenge_offset = tonumber(generated_work:sub(1,1),16) * 2
-	    if completed_work:sub(challenge_offset+1, challenge_offset+4) == 'b00b' then -- i dont know lua properly :^)
-	        return txn:set_var("txn.pow_passed", true)
-	    end
+		if completed_work:sub(challenge_offset+1, challenge_offset+4) == 'b00b' then -- i dont know lua properly :^)
+			return txn:set_var("txn.pow_passed", true)
+		end
 	end
 end
 
