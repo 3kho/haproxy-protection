@@ -114,15 +114,14 @@ function _M.view(applet)
 		local captcha_body = ""
 		local pow_body = ""
 
-		-- pretty much same as decice_checks but path is different. todo: refactor and pass the applet, with some ifs for applet vs txn
+		-- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
 		local captcha_enabled = false
 		local host = applet.headers['host'][0]
-		local domain_lookup = captcha_map:lookup(host) or 0
-		domain_lookup = tonumber(domain_lookup)
 		local path = applet.qs; --because on /bot-check?/whatever, .qs (query string) holds the "path"
-		local path_lookup = captcha_map:lookup(host..path) or 0
-		path_lookup = tonumber(path_lookup)
-		if (path_lookup == 2 and path_lookup >= domain_lookup) or domain_lookup == 2 then
+
+		local captcha_map_lookup = captcha_map:lookup(host..path) or captcha_map:lookup(host) or 0
+		captcha_map_lookup = tonumber(captcha_map_lookup)
+		if captcha_map_lookup == 2 then
 			captcha_enabled = true
 		end
 		--
@@ -187,23 +186,19 @@ function _M.view(applet)
 	applet:send(response_body)
 end
 
--- decide which checks to do based on domain and path and domain acls
+-- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
 function _M.decide_checks_necessary(txn)
 	local host = txn.sf:hdr("Host")
-	local domain_lookup = captcha_map:lookup(host) or 0
-	domain_lookup = tonumber(domain_lookup)
 	local path = txn.sf:path();
-	local path_lookup = captcha_map:lookup(host..path) or 0
-	path_lookup = tonumber(path_lookup)
-	-- probably should make this check less shit
-	if (path_lookup == 2 and path_lookup >= domain_lookup) or domain_lookup == 2 then
-		-- check both if captcha mode enabled
+	local captcha_map_lookup = captcha_map:lookup(host..path) or captcha_map:lookup(host) or 0
+	captcha_map_lookup = tonumber(captcha_map_lookup)
+	if captcha_map_lookup == 1 then
+		txn:set_var("txn.validate_pow", true)
+	elseif captcha_map_lookup == 2 then
 		txn:set_var("txn.validate_captcha", true)
 		txn:set_var("txn.validate_pow", true)
-	elseif (path_lookup == 1 and path_lookup >= domain_lookup) or domain_lookup == 1 then
-		-- only check pow if mode=1
-		txn:set_var("txn.validate_pow", true)
 	end
+	-- otherwise, domain+path was set to 0 (whitelist) or there is no entry in the map
 end
 
 -- check if captcha token is valid, separate secret from POW

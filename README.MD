@@ -14,7 +14,8 @@ Improvements in this fork:
 - Remove dns resolution hack, use proper backend address.
 - Fix multiple security issues that could result in bypassing the captcha.
 - Add a bucket duration for cookie validity, so valid cookies don't last forever.
-- Ability to enable globally, per-domain or per-domain+path, with paths taking priority.
+- Global toggle, for pow mode only.
+- Choose whitelist, pow or pow+captcha per-domain or per-domain+path, with paths taking priority.
 - Include dataplaneapi, to sync map files to disk if edited during runtime.
 - Many bugfixes.
 
