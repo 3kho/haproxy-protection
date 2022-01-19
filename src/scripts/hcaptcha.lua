@@ -144,7 +144,7 @@ function _M.view(applet)
                 "https://%s/siteverify",
                 core.backends["hcaptcha"].servers["hcaptcha"]:get_addr()
   			)
-			local hcaptcha_body = json.encode({
+			local hcaptcha_body = url.buildQuery({
 				secret=captcha_secret,
 				response=parsed_body["h-captcha-response"]
 			})
@@ -154,11 +154,12 @@ function _M.view(applet)
 				body=hcaptcha_body,
 				headers={
 					[ "host" ] = { captcha_provider_domain },
-					[ "content-type" ] = { "application/json" }
+					[ "content-type" ] = { "application/x-www-form-urlencoded" }
 				}
 			}
 			local status, api_response = pcall(json.decode, res.body)
 			--require("print_r")
+			--print_r(hcaptcha_body)
 			--print_r(res)
 			--print_r(api_response)
             if not status then
