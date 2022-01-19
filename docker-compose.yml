@@ -32,9 +32,9 @@ services:
       - BUCKET_DURATION=43200
       - BACKEND_NAME=servers
       - SERVER_PREFIX=websrv
-#  nginx:
-#    ports:
-#      - 81:80
-#    image: "nginx:latest"
-#    volumes:
-#      - ./nginx:/usr/share/nginx/html
+  nginx:
+    ports:
+      - 81:80
+    image: "nginx:latest"
+    volumes:
+      - ./nginx:/usr/share/nginx/html

@@ -17,9 +17,7 @@ RUN set -eux; \
 		--uid 99 \
 		haproxy
 
-ENV HAPROXY_VERSION 2.5.0
-ENV HAPROXY_URL http://www.haproxy.org/download/2.5/src/haproxy-2.5.0.tar.gz
-ENV HAPROXY_SHA256 16a5ed6256ca3670e41b76366a892b08485643204a3ce72b6e7a2d9a313aa225
+ENV HAPROXY_URL http://www.haproxy.org/download/2.6/src/snapshot/haproxy-ss-LATEST.tar.gz
 
 # see https://sources.debian.net/src/haproxy/jessie/debian/rules/ for some helpful navigation of the possible "make" arguments
 RUN set -eux; \
@@ -45,7 +43,7 @@ RUN set -eux; \
 	cp build/dataplaneapi /usr/local/bin/; \
 	\
 	wget -O haproxy.tar.gz "$HAPROXY_URL"; \
-	echo "$HAPROXY_SHA256 *haproxy.tar.gz" | sha256sum -c; \
+#	echo "$HAPROXY_SHA256 *haproxy.tar.gz" | sha256sum -c; \
 	mkdir -p /usr/src/haproxy; \
 	tar -xzf haproxy.tar.gz -C /usr/src/haproxy --strip-components=1; \
 	rm haproxy.tar.gz; \
