@@ -48,7 +48,7 @@ DDoS-protection mode is enabled by default.
 
 #### Installation
 
-Before installing the tool, ensure that HAProxy is built with Lua support (in debian package and ubuntu recommended PPA, it is.)
+Before installing the tool, ensure that HAProxy is built with Lua support and version >=2.5 for the native httpclient support. For Debian and Ubuntu (and -based) distros, see https://haproxy.debian.net/ for packages.
 
 - Copy [haproxy.cfg](haproxy/haproxy.cfg) to /etc/haproxy
   - Edit the `lua-load` directive to be the absolute path to [register.lua](src/scripts/register.lua)
