@@ -75,7 +75,7 @@ local body_template = [[
 			<p class="red">JavaScript is required on this page.</p>
 		</noscript>
 		<footer>
-			<p>Protection by <a href="https://kikeflare.com">KikeFlare</a></p>
+			<p><a href="https://gitgud.io/fatchan/haproxy-protection/">Open Source Bot Protection</a></p>
 			<p>Vey ID: <code>%s</code></p>
 		</footer>
 		<script src="/js/sha1.js"></script>
