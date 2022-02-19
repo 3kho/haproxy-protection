@@ -17,6 +17,7 @@ Improvements in this fork:
 - Global toggle, for pow mode only.
 - Choose whitelist, pow or pow+captcha per-domain or per-domain+path, with paths taking priority.
 - Include dataplaneapi, to sync map files to disk if edited during runtime.
+- In POW only mode, provide instructions and an encoded script to find the solution.
 - Many bugfixes.
 
 #### How to test

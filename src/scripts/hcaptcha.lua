@@ -60,6 +60,9 @@ local body_template = [[
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%}
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
+			details{max-width:80vw;text-align:left;margin:0 auto;}
+			summary{text-align:center;}
+			code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
 			h3,p{margin:3px}
 			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:30vh}
 		</style>
@@ -73,6 +76,7 @@ local body_template = [[
 		%s
 		<noscript>
 			<p class="red">JavaScript is required on this page.</p>
+			%s
 		</noscript>
 		<footer>
 			<p><a href="https://gitgud.io/fatchan/haproxy-protection/">Open Source Bot Protection</a></p>
@@ -81,6 +85,23 @@ local body_template = [[
 		<script src="/js/sha1.js"></script>
 	</body>
 </html>
+]]
+
+local noscript_extra_template = [[
+			<br>
+			<details>
+				<summary>No JavaScript?</summary>
+				<ol>
+					<li>
+						<p>Run this in a linux terminal:</p>
+						<code style="word-break: break-all;">
+							echo "Q0g9IiQxIjtCPSJiMDBiIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGExc3VtKTtFPSR7SDokRElGRjo0fTtbWyAkRSA9PSAkQiBdXSAmJiBlY2hvICRJICYmIGV4aXQgMDsoKEkrKykpO2RvbmU7Cg==" | base64 -d | sh -s %s
+						</code>
+					<li>Set a cookie named <code>z_ddos_pow</code> with the value as the number the script outputs.
+					<li>Remove "/bot-check?" from the url, and load the page again.
+				</ol>
+				<small>If you don't want to run untrusted code (you shouldn't), simply remove the pipe to sh to see the decoded script before running it. If you don't know what that means, you can't be helped. Additionally, the JavaScript for this page is open source and available <a href="https://gitgud.io/fatchan/haproxy-protection/-/tree/master/haproxy/js">here</a>.</small>
+			</details>
 ]]
 
 -- 3 dots animation for proof of work
@@ -113,6 +134,7 @@ function _M.view(applet)
 		-- define body sections
 		local captcha_body = ""
 		local pow_body = ""
+		local noscript_extra_body = ""
 
 		-- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
 		local captcha_enabled = false
@@ -131,10 +153,11 @@ function _M.view(applet)
 			captcha_body = string.format(captcha_section_template, captcha_sitekey)
 		else
 			pow_body = pow_section_template
+			noscript_extra_body = string.format(noscript_extra_template, generated_work)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(body_template, generated_work, pow_body, captcha_body, ray_id)
+		response_body = string.format(body_template, generated_work, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 	elseif applet.method == "POST" then
 		local parsed_body = url.parseQuery(applet.receive(applet))
