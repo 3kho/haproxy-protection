@@ -95,7 +95,7 @@ local noscript_extra_template = [[
 					<li>
 						<p>Run this in a linux terminal:</p>
 						<code style="word-break: break-all;">
-							echo "Q0g9IiQxIjtCPSJiMDBiIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGExc3VtKTtFPSR7SDokRElGRjo0fTtbWyAkRSA9PSAkQiBdXSAmJiBlY2hvICRJICYmIGV4aXQgMDsoKEkrKykpO2RvbmU7Cg==" | base64 -d | sh -s %s
+							echo "Q0g9IiQxIjtCPSJiMDBiIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGExc3VtKTtFPSR7SDokRElGRjo0fTtbWyAkRSA9PSAkQiBdXSAmJiBlY2hvICRJICYmIGV4aXQgMDsoKEkrKykpO2RvbmU7Cg==" | base64 -d | bash -s %s
 						</code>
 					<li>Set a cookie named <code>z_ddos_pow</code> with the value as the number the script outputs.
 					<li>Remove "/bot-check?" from the url, and load the page again.
