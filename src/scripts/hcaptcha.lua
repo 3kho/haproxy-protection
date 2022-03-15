@@ -63,7 +63,7 @@ local body_template = [[
 			details{max-width:80vw;text-align:left;margin:0 auto;}
 			summary{text-align:center;}
 			code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
-			img,h3,p{margin-bottom:0 0 5px 0}
+			img,h3,p{margin:0 0 5px 0}
 			footer{font-size:x-small;margin-top:auto;margin-bottom:20px}.pt{padding-top:30vh}
 		</style>
 		<noscript>
