@@ -59,19 +59,18 @@ local body_template = [[
 			.red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%}
-			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
+			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Arial,Helvetica,sans-serif;text-align:center;margin:0}
 			details{max-width:80vw;text-align:left;margin:0 auto;}
 			summary{text-align:center;}
 			code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
-			h3,p{margin:3px}
-			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:30vh}
+			img,h3,p{margin-bottom:0 0 5px 0}
+			footer{font-size:x-small;margin-top:auto;margin-bottom:20px}.pt{padding-top:30vh}
 		</style>
 		<noscript>
 			<style>.jsonly{display:none}</style>
 		</noscript>
 	</head>
 	<body data-pow="%s">
-		<h3>Checking your browser for robots...</h3>
 		%s
 		%s
 		<noscript>
@@ -79,7 +78,8 @@ local body_template = [[
 			%s
 		</noscript>
 		<footer>
-			<p><a href="https://gitgud.io/fatchan/haproxy-protection/">Open Source Bot Protection</a></p>
+			<img src="/img/footerlogo.png" />
+			<p>Security and Performance by <a href="https://kikeflare.com">Kikeflare</a></p>
 			<p>Vey ID: <code>%s</code></p>
 		</footer>
 		<script src="/js/sha1.js"></script>
@@ -106,7 +106,8 @@ local noscript_extra_template = [[
 
 -- 3 dots animation for proof of work
 local pow_section_template = [[
-		<div>
+		<h3 class="pt">Checking your browser for robots...</h3>
+		<div class="jsonly">
 			<div class="b"></div>
 			<div class="b"></div>
 			<div class="b"></div>
@@ -115,6 +116,7 @@ local pow_section_template = [[
 
 -- message, hcaptcha form and submit button
 local captcha_section_template = [[
+		<p class="pt">We have registered suspicious traffic coming from your network.</p>
 		<p>Please solve the captcha to continue.</p>
 		<form class="jsonly" method="POST">
 			<div class="h-captcha" data-sitekey="%s"></div>
