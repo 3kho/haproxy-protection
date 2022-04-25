@@ -11,11 +11,12 @@ Improvements in this fork:
 - Add examples and support for .onion/tor using the HAProxy PROXY protocol to provide some kind of "ip" discrimination of tor users (circuit identifiers).
 - Use HAProxy http-request return to improve performance/caching for the challenge page, without an extra backend http server.
 - Improved the appearance of the challenge page.
-- Remove dns resolution hack, use proper backend address.
+- Remove hcaptcha dns resolution hack, use proper backend address.
 - Fix multiple security issues that could result in bypassing the captcha.
 - Add a bucket duration for cookie validity, so valid cookies don't last forever.
-- Global toggle, for pow mode only.
-- Choose whitelist, pow or pow+captcha per-domain or per-domain+path, with paths taking priority.
+- Cluster toggle, for pow mode only.
+- Choose protection modes "none", "pow" or "pow+captcha" per-domain or per-domain+path, with paths taking priority.
+- Whitelist IPs/subnets.
 - Include dataplaneapi, to sync map files to disk if edited during runtime.
 - In POW only mode, provide instructions and an encoded script to find the solution.
 - Many bugfixes.
