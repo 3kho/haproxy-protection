@@ -59,7 +59,7 @@ local body_template = [[
 			.red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%}
-			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Arial,Helvetica,sans-serif;text-align:center;margin:0}
+			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
 			details{max-width:80vw;text-align:left;margin:0 auto;}
 			summary{text-align:center;}
 			code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
@@ -106,7 +106,7 @@ local noscript_extra_template = [[
 
 -- 3 dots animation for proof of work
 local pow_section_template = [[
-		<h3 class="pt">Checking your browser for robots...</h3>
+		<h3 class="pt">Checking your browser for robots 🤖</h3>
 		<div class="jsonly">
 			<div class="b"></div>
 			<div class="b"></div>
@@ -116,8 +116,7 @@ local pow_section_template = [[
 
 -- message, hcaptcha form and submit button
 local captcha_section_template = [[
-		<p class="pt">We have registered suspicious traffic coming from your network.</p>
-		<p>Please solve the captcha to continue.</p>
+		<p class="pt">Please solve the captcha to continue.</p>
 		<form class="jsonly" method="POST">
 			<div class="h-captcha" data-sitekey="%s"></div>
 			<script src="https://hcaptcha.com/1/api.js" async defer></script>
