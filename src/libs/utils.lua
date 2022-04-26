@@ -10,10 +10,10 @@ function _M.generate_secret(context, salt, is_applet, iterations)
 	local user_agent = ""
 	if is_applet == true then
 		user_agent = context.headers['user-agent'] or {}
-		user_agent = user_agent[0]
+		user_agent = user_agent[0] or ""
 	else
 		--note req_fhdr not req_hdr otherwise commas in useragent become a delimiter
-		user_agent = context.sf:req_fhdr('user-agent')
+		user_agent = context.sf:req_fhdr('user-agent') or ""
 	end
 	if iterations == nil then
 		--hcaptcha secret is just this
