@@ -80,7 +80,7 @@ local body_template = [[
 		</noscript>
 		<footer>
 			<img src="/img/footerlogo.png" />
-			<p>Security and Performance by <a href="https://kikeflare.com">Kikeflare</a></p>
+			<p>Security and Performance by <a href="https://BasedFlare.com">BasedFlare</a></p>
 			<p>Node: <code>%s</code></p>
 		</footer>
 		<script src="/js/sha1.js"></script>
