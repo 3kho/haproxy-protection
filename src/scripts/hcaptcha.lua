@@ -72,6 +72,7 @@ local body_template = [[
 	<body data-pow="%s">
 		%s
 		%s
+		%s
 		<noscript>
 			<br>
 			<p class="red">JavaScript is required on this page.</p>
@@ -102,12 +103,16 @@ local noscript_extra_template = [[
 			</details>
 ]]
 
--- 3 dots animation for proof of work
-local pow_section_template = [[
+-- title with favicon and hostname
+local site_name_section_template = [[
 		<h3 class="pt">
 			<img src="/favicon.ico" width="32" height="32">
 			%s
 		</h3>
+]]
+
+-- spinner animation for proof of work
+local pow_section_template = [[
 		<h3>
 			Checking your browser for robots 🤖
 		</h3>
@@ -118,7 +123,9 @@ local pow_section_template = [[
 
 -- message, hcaptcha form and submit button
 local captcha_section_template = [[
-		<p class="pt">Please solve the captcha to continue.</p>
+		<h3>
+			Please solve the captcha to continue.
+		</h3>
 		<form class="jsonly" method="POST">
 			<div class="h-captcha" data-sitekey="%s"></div>
 			<script src="https://hcaptcha.com/1/api.js" async defer></script>
@@ -135,6 +142,7 @@ function _M.view(applet)
 		generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
 
 		-- define body sections
+		local site_name_body = ""
 		local captcha_body = ""
 		local pow_body = ""
 		local noscript_extra_body = ""
@@ -152,15 +160,16 @@ function _M.view(applet)
 		--
 
 		-- pow at least is always enabled when reaching bot-check page
+		site_name_body = string.format(site_name_section_template, host)
 		if captcha_enabled then
 			captcha_body = string.format(captcha_section_template, captcha_sitekey)
 		else
-			pow_body = string.format(pow_section_template, host)
+			pow_body = pow_section_template
 			noscript_extra_body = string.format(noscript_extra_template, generated_work)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(body_template, generated_work, pow_body, captcha_body, noscript_extra_body, ray_id)
+		response_body = string.format(body_template, generated_work, site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 	elseif applet.method == "POST" then
 		local parsed_body = url.parseQuery(applet.receive(applet))
