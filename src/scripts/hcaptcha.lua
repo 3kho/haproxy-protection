@@ -50,36 +50,36 @@ local body_template = [[
 		<style>
 			:root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 			@media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
-			.b{display:inline-block;background:#6b93f7;border-radius:50%%;margin:10px;height:16px;width:16px;box-shadow:0 0 0 0 #6b93f720;transform:scale(1)}
-			.b:nth-of-type(1){animation:p 3s infinite}
-			.b:nth-of-type(2){animation:p 3s .5s infinite}
-			.b:nth-of-type(3){animation:p 3s 1s infinite}
-			@keyframes p{0%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f790}70%%{transform:scale(1);box-shadow:0 0 0 10px #6b93f700}100%%{transform:scale(.95);box-shadow:0 0 0 0 #6b93f700}}
 			.h-captcha{min-height:85px;display:block}
 			.red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%}
-			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
-			details{max-width:80vw;text-align:left;margin:0 auto;}
-			summary{text-align:center;}
+			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:1200px;margin:0 auto;padding: 0 20px}
+			details{transition: border-left-color 0.5s;max-width:1200px;text-align:left;border-left: 2px solid var(--text-color);padding:10px}
 			code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
-			h3,p{margin:3px}
-			footer{font-size:small;margin-top:auto;margin-bottom:50px}h3{padding-top:30vh}
+			img,h3,p{margin:0 0 5px 0}
+			footer{font-size:x-small;margin-top:auto;margin-bottom:20px;text-align:center}
+			img{display:inline}
+			.pt{padding-top:15vh;display:flex;align-items: center}
+			.pt img{margin-right:10px}
+			details[open]{border-left-color: #1400ff}
+			.lds-ring{display:inline-block;position:relative;width:80px;height:80px}.lds-ring div{box-sizing:border-box;display:block;position:absolute;width:32px;height:32px;margin:10px;border:5px solid var(--text-color);border-radius:50%%;animation:lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:var(--text-color) transparent transparent transparent}.lds-ring div:nth-child(1){animation-delay:-0.45s}.lds-ring div:nth-child(2){animation-delay:-0.3s}.lds-ring div:nth-child(3){animation-delay:-0.15s}@keyframes lds-ring{0%%{transform:rotate(0deg)}100%%{transform:rotate(360deg)}}
 		</style>
 		<noscript>
 			<style>.jsonly{display:none}</style>
 		</noscript>
 	</head>
 	<body data-pow="%s">
-		<h3>Checking your browser for robots...</h3>
+		%s
 		%s
 		%s
 		<noscript>
+			<br>
 			<p class="red">JavaScript is required on this page.</p>
 			%s
 		</noscript>
 		<footer>
-			<p><a href="https://gitgud.io/fatchan/haproxy-protection/">Open Source Bot Protection</a></p>
+			<p>Security and Performance by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
 			<p>Vey ID: <code>%s</code></p>
 		</footer>
 		<script src="/js/sha1.js"></script>
@@ -88,7 +88,6 @@ local body_template = [[
 ]]
 
 local noscript_extra_template = [[
-			<br>
 			<details>
 				<summary>No JavaScript?</summary>
 				<ol>
@@ -97,25 +96,35 @@ local noscript_extra_template = [[
 						<code style="word-break: break-all;">
 							echo "Q0g9IiQxIjtCPSJiMDBiIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGExc3VtKTtFPSR7SDokRElGRjo0fTtbWyAkRSA9PSAkQiBdXSAmJiBlY2hvICRJICYmIGV4aXQgMDsoKEkrKykpO2RvbmU7Cg==" | base64 -d | bash -s %s
 						</code>
-					<li>Set a cookie named <code>z_ddos_pow</code> with the value as the number the script outputs.
-					<li>Remove "/bot-check?" from the url, and load the page again.
+					<li>Set a cookie named <code>z_ddos_pow</code> with the value as the number the script outputs, and path <code>/</code>.
+					<li>Remove <code>/bot-check?</code> from the url, and load the page again.
 				</ol>
-				<small>If you don't want to run untrusted code (you shouldn't), simply remove the pipe to sh to see the decoded script before running it. If you don't know what that means, you can't be helped. Additionally, the JavaScript for this page is open source and available <a href="https://gitgud.io/fatchan/haproxy-protection/-/tree/master/haproxy/js">here</a>.</small>
 			</details>
 ]]
 
--- 3 dots animation for proof of work
+-- title with favicon and hostname
+local site_name_section_template = [[
+		<h3 class="pt">
+			<img src="/favicon.ico" width="32" height="32">
+			%s
+		</h3>
+]]
+
+-- spinner animation for proof of work
 local pow_section_template = [[
-		<div>
-			<div class="b"></div>
-			<div class="b"></div>
-			<div class="b"></div>
+		<h3>
+			Checking your browser for robots 🤖
+		</h3>
+		<div class="jsonly">
+			<div class="lds-ring"><div></div><div></div><div></div><div></div></div>
 		</div>
 ]]
 
 -- message, hcaptcha form and submit button
 local captcha_section_template = [[
-		<p>Please solve the captcha to continue.</p>
+		<h3>
+			Please solve the captcha to continue.
+		</h3>
 		<form class="jsonly" method="POST">
 			<div class="h-captcha" data-sitekey="%s"></div>
 			<script src="https://hcaptcha.com/1/api.js" async defer></script>
@@ -132,6 +141,7 @@ function _M.view(applet)
 		generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
 
 		-- define body sections
+		local site_name_body = ""
 		local captcha_body = ""
 		local pow_body = ""
 		local noscript_extra_body = ""
@@ -149,6 +159,7 @@ function _M.view(applet)
 		--
 
 		-- pow at least is always enabled when reaching bot-check page
+		site_name_body = string.format(site_name_section_template, host)
 		if captcha_enabled then
 			captcha_body = string.format(captcha_section_template, captcha_sitekey)
 		else
@@ -157,7 +168,7 @@ function _M.view(applet)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(body_template, generated_work, pow_body, captcha_body, noscript_extra_body, ray_id)
+		response_body = string.format(body_template, generated_work, site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 	elseif applet.method == "POST" then
 		local parsed_body = url.parseQuery(applet.receive(applet))
