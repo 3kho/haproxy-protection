@@ -26,8 +26,8 @@ services:
       - ./src/libs/:/etc/haproxy/libs/
       - ./haproxy/js/:/var/www/js/
     environment:
-      - RECAPTCHA_SECRET=6LdOmvEhAAAAAB9zq2oSnhpUmw4wZ4uvfzixoxNY
-      - RECAPTCHA_SITEKEY=6LdOmvEhAAAAAJjwpaaREKW9lYJ8arpZWydWDeXg
+      - RECAPTCHA_SECRET=
+      - RECAPTCHA_SITEKEY=
       - CAPTCHA_COOKIE_SECRET=changeme
       - POW_COOKIE_SECRET=changeme
       - RAY_ID=docker
