@@ -6,14 +6,31 @@ local cookie = require("cookie")
 local json = require("json")
 local sha = require("sha")
 
-local captcha_secret = os.getenv("HCAPTCHA_SECRET")
-local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY")
-local hcaptcha_cookie_secret = os.getenv("CAPTCHA_COOKIE_SECRET")
+local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
+local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY") or os.getenv("RECAPTCHA_SITEKEY")
+local captcha_cookie_secret = os.getenv("CAPTCHA_COOKIE_SECRET")
 local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 local ray_id = os.getenv("RAY_ID")
 
-local captcha_provider_domain = "hcaptcha.com"
 local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
+local captcha_provider_domain = ""
+local captcha_classname = ""
+local captcha_script_src = ""
+local captcha_siteverify_path = ""
+local captcha_backend_name = ""
+if os.getenv("HCAPTCHA_SITEKEY") then
+	captcha_provider_domain = "hcaptcha.com"
+	captcha_classname = "h-captcha"
+	captcha_script_src = "https://hcaptcha.com/1/api.js"
+	captcha_siteverify_path = "/siteverify"
+	captcha_backend_name = "hcaptcha"
+else
+	captcha_provider_domain = "www.google.com"
+	captcha_classname = "g-recaptcha"
+	captcha_script_src = "https://www.google.com/recaptcha/api.js"
+	captcha_siteverify_path = "/recaptcha/api/siteverify"
+	captcha_backend_name = "recaptcha"
+end
 
 function _M.setup_servers()
 	local backend_name = os.getenv("BACKEND_NAME")
@@ -50,7 +67,7 @@ local body_template = [[
 		<style>
 			:root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 			@media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
-			.h-captcha{min-height:85px;display:block}
+			.h-captcha,.g-recaptcha{min-height:85px;display:block}
 			.red{color:red;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%}
@@ -120,14 +137,14 @@ local pow_section_template = [[
 		</div>
 ]]
 
--- message, hcaptcha form and submit button
+-- message, captcha form and submit button
 local captcha_section_template = [[
 		<h3>
 			Please solve the captcha to continue.
 		</h3>
 		<form class="jsonly" method="POST">
-			<div class="h-captcha" data-sitekey="%s"></div>
-			<script src="https://hcaptcha.com/1/api.js" async defer></script>
+			<div class="%s" data-sitekey="%s"></div>
+			<script src="%s" async defer></script>
 			<input type="submit" value="Calculating proof of work..." disabled>
 		</form>
 ]]
@@ -161,7 +178,7 @@ function _M.view(applet)
 		-- pow at least is always enabled when reaching bot-check page
 		site_name_body = string.format(site_name_section_template, host)
 		if captcha_enabled then
-			captcha_body = string.format(captcha_section_template, captcha_sitekey)
+			captcha_body = string.format(captcha_section_template, captcha_classname, captcha_sitekey, captcha_script_src)
 		else
 			pow_body = pow_section_template
 			noscript_extra_body = string.format(noscript_extra_template, generated_work)
@@ -172,34 +189,35 @@ function _M.view(applet)
 		response_status_code = 403
 	elseif applet.method == "POST" then
 		local parsed_body = url.parseQuery(applet.receive(applet))
-		if parsed_body["h-captcha-response"] then
-			local hcaptcha_url = string.format(
-				"https://%s/siteverify",
-				core.backends["hcaptcha"].servers["hcaptcha"]:get_addr()
+		local user_captcha_response = parsed_body["h-captcha-response"] or parsed_body["g-recaptcha-response"]
+--		require("print_r")
+--		print_r(captcha_provider_domain)
+--		print_r(user_captcha_response)
+		if user_captcha_response then
+			local captcha_url = string.format(
+				"https://%s%s",
+				core.backends[captcha_backend_name].servers[captcha_backend_name]:get_addr(),
+				captcha_siteverify_path
 			)
-			local hcaptcha_body = url.buildQuery({
+			local captcha_body = url.buildQuery({
 				secret=captcha_secret,
-				response=parsed_body["h-captcha-response"]
+				response=user_captcha_response
 			})
 			local httpclient = core.httpclient()
 			local res = httpclient:post{
-				url=hcaptcha_url,
-				body=hcaptcha_body,
+				url=captcha_url,
+				body=captcha_body,
 				headers={
 					[ "host" ] = { captcha_provider_domain },
 					[ "content-type" ] = { "application/x-www-form-urlencoded" }
 				}
 			}
 			local status, api_response = pcall(json.decode, res.body)
-			--require("print_r")
-			--print_r(hcaptcha_body)
-			--print_r(res)
-			--print_r(api_response)
 			if not status then
 				api_response = {}
 			end
 			if api_response.success == true then
-				local floating_hash = utils.generate_secret(applet, hcaptcha_cookie_secret, true, nil)
+				local floating_hash = utils.generate_secret(applet, captcha_cookie_secret, true, nil)
 				applet:add_header(
 					"set-cookie",
 					string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", floating_hash)
@@ -238,7 +256,7 @@ end
 -- check if captcha token is valid, separate secret from POW
 function _M.check_captcha_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-	local expected_cookie = utils.generate_secret(txn, hcaptcha_cookie_secret, false, nil)
+	local expected_cookie = utils.generate_secret(txn, captcha_cookie_secret, false, nil)
 	if parsed_request_cookies["z_ddos_captcha"] == expected_cookie then
 		return txn:set_var("txn.captcha_passed", true)
 	end

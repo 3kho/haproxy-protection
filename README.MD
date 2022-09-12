@@ -28,6 +28,8 @@ Add some env vars to docker-compose file:
 
 - HCAPTCHA_SITEKEY - your hcaptcha site key
 - HCAPTCHA_SECRET - your hcaptcha secret key
+- RECAPTCHA_SITEKEY - your recaptcha site key
+- RECAPTCHA_SECRET - your recaptcha secret key
 - CAPTCHA_COOKIE_SECRET - random string, a salt for captcha cookies
 - POW_COOKIE_SECRET - different random string, a salt for pow cookies
 - RAY_ID - string to identify the HAProxy node by
