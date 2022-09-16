@@ -114,10 +114,10 @@ local noscript_extra_template = [[
 					<li>
 						<p>Run this in a linux terminal:</p>
 						<code style="word-break: break-all;">
-							echo "Q0g9IiQxIjtCPSJiMDBiIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGExc3VtKTtFPSR7SDokRElGRjo0fTtbWyAkRSA9PSAkQiBdXSAmJiBlY2hvICRJICYmIGV4aXQgMDsoKEkrKykpO2RvbmU7Cg==" | base64 -d | bash -s %s
+							echo "Q0g9IiQyIjtCPSIwMDQxIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGEyNTZzdW0pO0U9JHtIOiRESUZGOjR9O1tbICRFID09ICRCIF1dICYmIGVjaG8gJDEjJDIjJDMjJEkgJiYgZXhpdCAwOygoSSsrKSk7ZG9uZTs=" | base64 -d | bash -s %s %s %s
 						</code>
-					<li>Set a cookie named <code>z_ddos_pow</code> with the value as the number the script outputs, and path <code>/</code>.
-					<li>Remove <code>/bot-check?</code> from the url, and load the page again.
+					<li>Set a cookie named <code>z_ddos_pow</code> with the value as the script output, and path <code>/</code>.
+					<li>Remove <code>/bot-check?</code> from the url, and reload the page.
 				</ol>
 			</details>
 ]]
@@ -190,7 +190,7 @@ function _M.view(applet)
 			captcha_body = string.format(captcha_section_template, captcha_classname, captcha_sitekey, captcha_script_src)
 		else
 			pow_body = pow_section_template
-			noscript_extra_body = string.format(noscript_extra_template, combined_challenge)
+			noscript_extra_body = string.format(noscript_extra_template, user_key, challenge_hash, signature)
 		end
 
 		-- sub in the body sections
