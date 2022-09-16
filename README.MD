@@ -1,9 +1,9 @@
 ## HAProxy DDoS protection system
 
 A fork and further development of a proof of concept from https://github.com/mora9715/haproxy_ddos_protector, a HAProxy configuration and lua scripts allowing a challenge-response page where users solve a captcha and/or proof-of-work.
-Intended to stop bots, spam, ddos, etc.
+Intended to stop bots, spam, ddos, 
 
-Will soon™ be accompanied by a control panel allowing to manage clusters of servers with this installed. Allowing you to add/remove/edit domains, protection rules, blocked ips, backend server IPs, etc during runtime.
+Integrates with https://gitgud.io/fatchan/haproxy-panel-next to add/remove/edit domains, protection rules, blocked ips, backend server IPs, etc during runtime.
 
 Improvements in this fork:
 
@@ -28,6 +28,8 @@ Add some env vars to docker-compose file:
 
 - HCAPTCHA_SITEKEY - your hcaptcha site key
 - HCAPTCHA_SECRET - your hcaptcha secret key
+- RECAPTCHA_SITEKEY - your recaptcha site key
+- RECAPTCHA_SECRET - your recaptcha secret key
 - CAPTCHA_COOKIE_SECRET - random string, a salt for captcha cookies
 - POW_COOKIE_SECRET - different random string, a salt for pow cookies
 - RAY_ID - string to identify the HAProxy node by
@@ -55,7 +57,7 @@ Before installing the tool, ensure that HAProxy is built with Lua support and ve
 
 - Copy [haproxy.cfg](haproxy/haproxy.cfg) to /etc/haproxy
   - Edit the `lua-load` directive to be the absolute path to [register.lua](src/scripts/register.lua)
-  - Edit the paths of sha1.js and worker.js in the `http-request return` directive to the absolut path to the respective files in the haproxy/js folder
+  - Edit the paths of challenge.js and worker.js in the `http-request return` directive to the absolut path to the respective files in the haproxy/js folder
 - Copy [dataplaneapi.hcl](haproxy/dataplaneapi.hcl) to /etc/haproxy
 - Copy or link [scripts](src/scripts) to /etc/haproxy/scripts
 - Copy or link [libs](src/libs) to /etc/haproxy/libs (or a path where Lua looks for modules).

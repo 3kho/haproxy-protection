@@ -5,19 +5,14 @@ async function hash(data, method) {
 }
 
 onmessage = async function(e) {
-	const [challenge, difficulty, id, threads] = e.data;
-	console.log('Worker thread', id,'got challenge', challenge, 'with difficulty', difficulty);
+	const [challenge, id, threads] = e.data;
+	console.log('Worker thread', id,'got challenge', challenge);
 	let i = id;
 	let challengeIndex = parseInt(challenge[0], 16);
 	while(true) {
-		let result = await hash(challenge+i, 'sha-1');
-		let middle = true;
-		for(let imiddle = 1; imiddle <= difficulty; imiddle++) {
-			middle = (middle && (result[challengeIndex+imiddle] === 0x00));
-		}
-		if(result[challengeIndex] === 0xb0
-			&& middle === true
-			&& result[challengeIndex+difficulty+1] === 0x0b){
+		let result = await hash(challenge+i, 'sha-256');
+		if(result[challengeIndex] === 0x00
+			&& result[challengeIndex+1] === 0x41){
 			console.log('Worker thread found solution:', i);
 			postMessage([id, i]);
 			break;
