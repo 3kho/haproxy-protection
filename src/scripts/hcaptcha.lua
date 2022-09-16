@@ -5,11 +5,14 @@ local utils = require("utils")
 local cookie = require("cookie")
 local json = require("json")
 local sha = require("sha")
+local randbytes = require("randbytes")
+--require("print_r")
 
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
 local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY") or os.getenv("RECAPTCHA_SITEKEY")
 local captcha_cookie_secret = os.getenv("CAPTCHA_COOKIE_SECRET")
 local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
+local hmac_cookie_secret = os.getenv("HMAC_COOKIE_SECRET")
 local ray_id = os.getenv("RAY_ID")
 
 local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
@@ -99,7 +102,7 @@ local body_template = [[
 			<p>Security and Performance by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
 			<p>Vey ID: <code>%s</code></p>
 		</footer>
-		<script src="/js/sha1.js"></script>
+		<script src="/js/challenge.js"></script>
 	</body>
 </html>
 ]]
@@ -154,8 +157,15 @@ function _M.view(applet)
 	local response_status_code
 	if applet.method == "GET" then
 
-		-- get challenge string for proof of work
-		generated_work = utils.generate_secret(applet, pow_cookie_secret, true, "")
+		-- get the user_key#challenge#sig
+		local user_key = sha.bin_to_hex(randbytes(16))
+		local challenge_hash = utils.generate_secret(applet, pow_cookie_secret, user_key, true)
+		local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. challenge_hash)
+		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. signature
+		-- print_r(user_key)
+		-- print_r(challenge_hash)
+		-- print_r(signature)
+		-- print_r(combined_challenge)
 
 		-- define body sections
 		local site_name_body = ""
@@ -173,7 +183,6 @@ function _M.view(applet)
 		if captcha_map_lookup == 2 then
 			captcha_enabled = true
 		end
-		--
 
 		-- pow at least is always enabled when reaching bot-check page
 		site_name_body = string.format(site_name_section_template, host)
@@ -181,18 +190,15 @@ function _M.view(applet)
 			captcha_body = string.format(captcha_section_template, captcha_classname, captcha_sitekey, captcha_script_src)
 		else
 			pow_body = pow_section_template
-			noscript_extra_body = string.format(noscript_extra_template, generated_work)
+			noscript_extra_body = string.format(noscript_extra_template, combined_challenge)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(body_template, generated_work, site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
+		response_body = string.format(body_template, combined_challenge, site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 	elseif applet.method == "POST" then
 		local parsed_body = url.parseQuery(applet.receive(applet))
 		local user_captcha_response = parsed_body["h-captcha-response"] or parsed_body["g-recaptcha-response"]
---		require("print_r")
---		print_r(captcha_provider_domain)
---		print_r(user_captcha_response)
 		if user_captcha_response then
 			local captcha_url = string.format(
 				"https://%s%s",
@@ -217,10 +223,14 @@ function _M.view(applet)
 				api_response = {}
 			end
 			if api_response.success == true then
-				local floating_hash = utils.generate_secret(applet, captcha_cookie_secret, true, nil)
+				-- for captcha, they dont need to solve a POW but we check the user_hash and sig later
+				local user_key = sha.bin_to_hex(randbytes(16))
+				local user_hash = utils.generate_secret(applet, captcha_cookie_secret, user_key, true)
+				local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. user_hash)
+				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. signature
 				applet:add_header(
 					"set-cookie",
-					string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", floating_hash)
+					string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", combined_cookie)
 				)
 			end
 		end
@@ -253,26 +263,57 @@ function _M.decide_checks_necessary(txn)
 	-- otherwise, domain+path was set to 0 (whitelist) or there is no entry in the map
 end
 
--- check if captcha token is valid, separate secret from POW
+-- check if captcha cookie is valid, separate secret from POW
 function _M.check_captcha_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-	local expected_cookie = utils.generate_secret(txn, captcha_cookie_secret, false, nil)
-	if parsed_request_cookies["z_ddos_captcha"] == expected_cookie then
+	local received_captcha_cookie = parsed_request_cookies["z_ddos_captcha"] or ""
+	local split_cookie = utils.split(received_captcha_cookie, "#")
+	if #split_cookie ~= 3 then
+		return
+	end
+	local given_user_key = split_cookie[1]
+	local given_user_hash = split_cookie[2]
+	local given_signature = split_cookie[3]
+	-- regenerate the user hash and compare it
+	local generated_user_hash = utils.generate_secret(txn, captcha_cookie_secret, given_user_key, false)
+	if generated_user_hash ~= given_user_hash then
+		return
+	end
+	-- regenerate the signature and compare it
+	local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_user_hash)
+	if given_signature == generated_signature then
 		return txn:set_var("txn.captcha_passed", true)
 	end
 end
 
--- check if pow token is valid
+-- check if pow cookie is valid
 function _M.check_pow_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-	if parsed_request_cookies["z_ddos_pow"] then
-		local generated_work = utils.generate_secret(txn, pow_cookie_secret, false, "")
-		local iterations = parsed_request_cookies["z_ddos_pow"]
-		local completed_work = sha.sha1(generated_work .. iterations)
-		local challenge_offset = tonumber(generated_work:sub(1,1),16) * 2
-		if completed_work:sub(challenge_offset+1, challenge_offset+4) == 'b00b' then -- i dont know lua properly :^)
-			return txn:set_var("txn.pow_passed", true)
-		end
+	local received_pow_cookie = parsed_request_cookies["z_ddos_pow"] or ""
+	-- split the cookie up
+	local split_cookie = utils.split(received_pow_cookie, "#")
+	if #split_cookie ~= 4 then
+		return
+	end
+	local given_user_key = split_cookie[1]
+	local given_challenge_hash = split_cookie[2]
+	local given_signature = split_cookie[3]
+	local given_nonce = split_cookie[4]
+	-- regenerate the challenge and compare it
+	local generated_challenge_hash = utils.generate_secret(txn, pow_cookie_secret, given_user_key, false)
+	if given_challenge_hash ~= generated_challenge_hash then
+		return
+	end
+	-- regenerate the signature and compare it
+	local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
+	if given_signature ~= generated_signature then
+		return
+	end
+	-- check the work
+	local completed_work = sha.sha256(generated_challenge_hash .. given_nonce)
+	local challenge_offset = tonumber(generated_challenge_hash:sub(1,1),16) * 2
+	if completed_work:sub(challenge_offset+1, challenge_offset+4) == '0041' then -- i dont know lua properly :^)
+		return txn:set_var("txn.pow_passed", true)
 	end
 end
 
