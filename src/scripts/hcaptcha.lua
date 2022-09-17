@@ -88,6 +88,7 @@ local body_template = [[
 		<noscript>
 			<style>.jsonly{display:none}</style>
 		</noscript>
+		<script src="/js/challenge.js"></script>
 	</head>
 	<body data-pow="%s">
 		%s
@@ -102,7 +103,6 @@ local body_template = [[
 			<p>Security and Performance by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
 			<p>Vey ID: <code>%s</code></p>
 		</footer>
-		<script src="/js/challenge.js"></script>
 	</body>
 </html>
 ]]
@@ -146,9 +146,8 @@ local captcha_section_template = [[
 			Please solve the captcha to continue.
 		</h3>
 		<form class="jsonly" method="POST">
-			<div class="%s" data-sitekey="%s"></div>
+			<div class="%s" data-sitekey="%s" data-callback="onCaptchaSubmit"></div>
 			<script src="%s" async defer></script>
-			<input type="submit" value="Calculating proof of work..." disabled>
 		</form>
 ]]
 
