@@ -18,7 +18,6 @@ services:
       - ./haproxy/blocked.map:/etc/haproxy/blocked.map
       - ./haproxy/whitelist.map:/etc/haproxy/whitelist.map
       - ./haproxy/maintenance.map:/etc/haproxy/maintenance.map
-      - ./haproxy/dataplaneapi.hcl:/etc/haproxy/dataplaneapi.hcl
       - ./haproxy/trace.txt:/etc/haproxy/trace.txt
       - ./src/scripts/:/etc/haproxy/scripts/
       - ./src/libs/:/etc/haproxy/libs/
