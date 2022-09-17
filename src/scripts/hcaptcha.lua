@@ -227,14 +227,14 @@ function _M.view(applet)
 				local user_hash = utils.generate_secret(applet, captcha_cookie_secret, user_key, true)
 				local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. user_hash)
 				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. signature
-				local secure_cookie_flag = "true"
+				local secure_cookie_flag = " Secure=true;"
 				if applet.sf:ssl_fc() == "0" then
-					secure_cookie_flag = "false"
+					secure_cookie_flag = ""
 				end
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=%s;",
+						"z_ddos_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict;",
 						combined_cookie,
 						secure_cookie_flag
 					)
