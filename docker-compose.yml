@@ -18,15 +18,17 @@ services:
       - ./haproxy/blocked.map:/etc/haproxy/blocked.map
       - ./haproxy/whitelist.map:/etc/haproxy/whitelist.map
       - ./haproxy/maintenance.map:/etc/haproxy/maintenance.map
-      - ./haproxy/dataplaneapi.hcl:/etc/haproxy/dataplaneapi.hcl
       - ./haproxy/trace.txt:/etc/haproxy/trace.txt
       - ./src/scripts/:/etc/haproxy/scripts/
       - ./src/libs/:/etc/haproxy/libs/
       - ./haproxy/js/:/var/www/js/
       - ./haproxy/html/maintenance.html:/var/www/html/maintenance.html
     environment:
-      - RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
-      - RECAPTCHA_SITEKEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+      # These are the hcaptcha and recaptcha test keys, not leaking any dont worry :^)
+      - HCAPTCHA_SITEKEY=20000000-ffff-ffff-ffff-000000000002
+      - HCAPTCHA_SECRET=0x0000000000000000000000000000000000000000
+      #- RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+      #- RECAPTCHA_SITEKEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
       - CAPTCHA_COOKIE_SECRET=changeme
       - POW_COOKIE_SECRET=changeme
       - HMAC_COOKIE_SECRET=changeme

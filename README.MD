@@ -18,7 +18,6 @@ Improvements in this fork:
 - Choose protection modes "none", "pow" or "pow+captcha" per-domain or per-domain+path, with paths taking priority.
 - Whitelist IPs/subnets.
 - Maintenance mode page for selected domains.
-- Include dataplaneapi, to sync map files to disk if edited during runtime.
 - In POW only mode, provide instructions and an encoded script to find the solution.
 - Many bugfixes.
 
@@ -32,10 +31,11 @@ Add some env vars to docker-compose file:
 - RECAPTCHA_SECRET - your recaptcha secret key
 - CAPTCHA_COOKIE_SECRET - random string, a salt for captcha cookies
 - POW_COOKIE_SECRET - different random string, a salt for pow cookies
+- HMAC_COOKIE_SECRET - different random string, a salt for pow cookies
 - RAY_ID - string to identify the HAProxy node by
 - BUCKET_DURATION - how long between bucket changes, invalidating cookies
-- BACKEND_NAME - name of backend to build from hosts.map
-- SERVER_PREFIX - prefix of server names used in server-template
+- BACKEND_NAME - Optional, name of backend to build from hosts.map
+- SERVER_PREFIX - Optional, prefix of server names used in server-template
 
 Add a domain name + backend IP to `haproxy/hosts.map` like:
 ```plain
@@ -58,7 +58,6 @@ Before installing the tool, ensure that HAProxy is built with Lua support and ve
 - Copy [haproxy.cfg](haproxy/haproxy.cfg) to /etc/haproxy
   - Edit the `lua-load` directive to be the absolute path to [register.lua](src/scripts/register.lua)
   - Edit the paths of challenge.js and worker.js in the `http-request return` directive to the absolut path to the respective files in the haproxy/js folder
-- Copy [dataplaneapi.hcl](haproxy/dataplaneapi.hcl) to /etc/haproxy
 - Copy or link [scripts](src/scripts) to /etc/haproxy/scripts
 - Copy or link [libs](src/libs) to /etc/haproxy/libs (or a path where Lua looks for modules).
 - Copy the map files from the haproxy folder to /etc/haproxy
