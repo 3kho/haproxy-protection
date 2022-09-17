@@ -6,7 +6,7 @@ local cookie = require("cookie")
 local json = require("json")
 local sha = require("sha")
 local randbytes = require("randbytes")
---require("print_r")
+-- require("print_r")
 
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
 local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY") or os.getenv("RECAPTCHA_SITEKEY")
@@ -156,7 +156,6 @@ function _M.view(applet)
 	local response_body = ""
 	local response_status_code
 	if applet.method == "GET" then
-
 		-- get the user_key#challenge#sig
 		local user_key = sha.bin_to_hex(randbytes(16))
 		local challenge_hash = utils.generate_secret(applet, pow_cookie_secret, user_key, true)
@@ -228,9 +227,17 @@ function _M.view(applet)
 				local user_hash = utils.generate_secret(applet, captcha_cookie_secret, user_key, true)
 				local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. user_hash)
 				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. signature
+				local secure_cookie_flag = "true"
+				if applet.sf:ssl_fc() == "0" then
+					secure_cookie_flag = "false"
+				end
 				applet:add_header(
 					"set-cookie",
-					string.format("z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=true;", combined_cookie)
+					string.format(
+						"z_ddos_captcha=%s; expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict; Secure=%s;",
+						combined_cookie,
+						secure_cookie_flag
+					)
 				)
 			end
 		end
