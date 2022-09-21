@@ -16,7 +16,7 @@ const powFinished = new Promise((resolve, reject) => {
 		const [_userkey, challenge, _signature] = combined.split("#");
 		const start = Date.now();
 		if (window.Worker && crypto.subtle) {
-			const threads = Math.min(4,Math.ceil(window.navigator.hardwareConcurrency/2));
+			const threads = Math.min(2,Math.ceil(window.navigator.hardwareConcurrency/2));
 			let finished = false;
 			const messageHandler = (e) => {
 				if (finished) { return; }
