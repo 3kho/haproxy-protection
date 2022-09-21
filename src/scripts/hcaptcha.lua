@@ -101,7 +101,7 @@ local body_template = [[
 		</noscript>
 		<footer>
 			<p>Security and Performance by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
-			<p>Vey ID: <code>%s</code></p>
+			<p>Node: <code>%s</code></p>
 		</footer>
 	</body>
 </html>
