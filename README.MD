@@ -34,6 +34,7 @@ Add some env vars to docker-compose file:
 - HMAC_COOKIE_SECRET - different random string, a salt for pow cookies
 - RAY_ID - string to identify the HAProxy node by
 - BUCKET_DURATION - how long between bucket changes, invalidating cookies
+- CHALLENGE_INCLUDES_IP - any value, whether to lock solved challenges to IP or tor circuit
 - BACKEND_NAME - Optional, name of backend to build from hosts.map
 - SERVER_PREFIX - Optional, prefix of server names used in server-template
 
