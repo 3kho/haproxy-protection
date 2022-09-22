@@ -5,6 +5,7 @@ services:
 #      context: ./
 #      dockerfile: tor/Dockerfile
   haproxy:
+    network_mode: host
     ports:
       - 80:80
     build:
