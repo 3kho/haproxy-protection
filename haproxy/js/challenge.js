@@ -2,18 +2,30 @@ function finishRedirect() {
 	window.location=location.search.slice(1)+location.hash || "/";
 }
 
-function finishPow(combined, answer) {
-	document.cookie='z_ddos_pow='+combined+'#'+answer+';expires=Thu, 31-Dec-37 23:55:55 GMT; path=/; SameSite=Strict; '+(location.protocol==='https:'?'Secure=true; ':'');
-	const hasCaptchaForm = document.querySelector('form');
-	if (!hasCaptchaForm) {
-		finishRedirect();
+function postResponse(powResponse, captchaResponse) {
+	const body = {
+		'pow_response': powResponse,
+	};
+	if (captchaResponse) {
+		body['h-captcha-response'] = captchaResponse;
+		body['g-recaptcha-response'] = captchaResponse;
 	}
+	fetch('/bot-check', {
+		method: 'POST',
+		headers: {
+		  'Content-Type': 'application/x-www-form-urlencoded',
+		},
+		body: new URLSearchParams(body),
+		redirect: 'manual',
+	}).then(res => {
+		finishRedirect();
+	})
 }
 
 const powFinished = new Promise((resolve, reject) => {
 	window.addEventListener('DOMContentLoaded', (event) => {
 		const combined = document.querySelector('[data-pow]').dataset.pow;
-		const [_userkey, challenge, _signature] = combined.split("#");
+		const [userkey, challenge, signature] = combined.split("#");
 		const start = Date.now();
 		if (window.Worker && crypto.subtle) {
 			const threads = Math.min(2,Math.ceil(window.navigator.hardwareConcurrency/2));
@@ -26,8 +38,7 @@ const powFinished = new Promise((resolve, reject) => {
 				console.log('Worker', workerId, 'returned answer', answer, 'in', Date.now()-start+'ms');
 				const dummyTime = 5000 - (Date.now()-start);
 				window.setTimeout(() => {
-					finishPow(combined, answer);
-					resolve();
+					resolve(`${combined}#${answer}`);
 				}, dummyTime);
 			}
 			const workers = [];
@@ -53,31 +64,24 @@ const powFinished = new Promise((resolve, reject) => {
 			}
 			const dummyTime = 5000 - (Date.now()-start);
 			window.setTimeout(() => {
-				finishPow(combined, i);
-				resolve();
+				resolve(`${combined}#${i}`);
 			}, dummyTime);
 		}
 	});
+}).then((powResponse) => {
+	const hasCaptchaForm = document.getElementById('captcha');
+	if (!hasCaptchaForm) {
+		postResponse(powResponse);
+	}
+	return powResponse;
 });
 
-function onCaptchaSubmit(callback) {
+function onCaptchaSubmit(captchaResponse) {
 	const captchaElem = document.querySelector('[data-sitekey]');
 	captchaElem.insertAdjacentHTML('afterend', `<div class="lds-ring"><div></div><div></div><div></div><div></div></div>`);
 	captchaElem.remove();
-	powFinished.then(() => {
-		fetch('/bot-check', {
-			method: 'POST',
-			headers: {
-			  'Content-Type': 'application/x-www-form-urlencoded',
-			},
-			body: new URLSearchParams({
-				'h-captcha-response': callback,
-				'g-recaptcha-response': callback,
-			}),
-			redirect: 'manual',
-		}).then(res => {
-			finishRedirect();
-		})
+	powFinished.then((powResponse) => {
+		postResponse(powResponse, captchaResponse);
 	});
 }
 
