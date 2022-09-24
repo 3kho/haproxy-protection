@@ -63,7 +63,6 @@ const powFinished = new Promise((resolve, reject) => {
 			});
 		} else {
 			console.warn('No webworker support, running in main/UI thread!');
-			const times = [];
 			let i = 0;
 			let start = Date.now();
 			while(true) {
@@ -78,7 +77,6 @@ const powFinished = new Promise((resolve, reject) => {
 				}
 				++i;
 			}
-			console.log(times)
 			const dummyTime = 5000 - (Date.now()-start);
 			window.setTimeout(() => {
 				resolve(`${combined}#${i}`);
