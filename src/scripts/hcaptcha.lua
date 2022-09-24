@@ -92,7 +92,7 @@ local body_template = [[
 			img,h3,p{margin:0 0 5px 0}
 			footer{font-size:x-small;margin-top:auto;margin-bottom:20px;text-align:center}
 			img{display:inline}
-			.pt{padding-top:15vh;display:flex;align-items: center}
+			.pt{padding-top:15vh;display:flex;align-items:center;word-break:break-all}
 			.pt img{margin-right:10px}
 			details[open]{border-left-color: #1400ff}
 			.lds-ring{display:inline-block;position:relative;width:80px;height:80px}.lds-ring div{box-sizing:border-box;display:block;position:absolute;width:32px;height:32px;margin:10px;border:5px solid var(--text-color);border-radius:50%%;animation:lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:var(--text-color) transparent transparent transparent}.lds-ring div:nth-child(1){animation-delay:-0.45s}.lds-ring div:nth-child(2){animation-delay:-0.3s}.lds-ring div:nth-child(3){animation-delay:-0.15s}@keyframes lds-ring{0%%{transform:rotate(0deg)}100%%{transform:rotate(360deg)}}
