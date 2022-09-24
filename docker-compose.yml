@@ -5,6 +5,7 @@ services:
 #      context: ./
 #      dockerfile: tor/Dockerfile
   haproxy:
+    network_mode: host
     ports:
       - 80:80
     build:
@@ -37,6 +38,9 @@ services:
       - BACKEND_NAME=servers
       - SERVER_PREFIX=websrv
       #- CHALLENGE_INCLUDES_IP=1
+      - POW_TIME=1
+      - POW_KB=6000
+      - POW_DIFFICULTY=3
   nginx:
     ports:
       - 81:80

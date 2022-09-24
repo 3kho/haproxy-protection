@@ -6,6 +6,18 @@ local cookie = require("cookie")
 local json = require("json")
 local sha = require("sha")
 local randbytes = require("randbytes")
+local argon2 = require("argon2")
+local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 3)
+local pow_kb = tonumber(os.getenv("POW_KB") or 6000)
+local pow_time = tonumber(os.getenv("POW_TIME") or 1)
+argon2.t_cost(pow_time)
+argon2.m_cost(pow_kb)
+argon2.parallelism(1)
+argon2.hash_len(32)
+argon2.variant(argon2.variants.argon2_id)
+
+-- Testing only
+-- require("socket")
 -- require("print_r")
 
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
@@ -80,7 +92,7 @@ local body_template = [[
 			img,h3,p{margin:0 0 5px 0}
 			footer{font-size:x-small;margin-top:auto;margin-bottom:20px;text-align:center}
 			img{display:inline}
-			.pt{padding-top:15vh;display:flex;align-items: center}
+			.pt{padding-top:15vh;display:flex;align-items:center;word-break:break-all}
 			.pt img{margin-right:10px}
 			details[open]{border-left-color: #1400ff}
 			.lds-ring{display:inline-block;position:relative;width:80px;height:80px}.lds-ring div{box-sizing:border-box;display:block;position:absolute;width:32px;height:32px;margin:10px;border:5px solid var(--text-color);border-radius:50%%;animation:lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:var(--text-color) transparent transparent transparent}.lds-ring div:nth-child(1){animation-delay:-0.45s}.lds-ring div:nth-child(2){animation-delay:-0.3s}.lds-ring div:nth-child(3){animation-delay:-0.15s}@keyframes lds-ring{0%%{transform:rotate(0deg)}100%%{transform:rotate(360deg)}}
@@ -88,9 +100,10 @@ local body_template = [[
 		<noscript>
 			<style>.jsonly{display:none}</style>
 		</noscript>
+		<script src="/js/argon2.js"></script>
 		<script src="/js/challenge.js"></script>
 	</head>
-	<body data-pow="%s">
+	<body data-pow="%s" data-diff="%s" data-time="%s" data-kb="%s">
 		%s
 		%s
 		%s
@@ -113,12 +126,15 @@ local noscript_extra_template = [[
 				<summary>No JavaScript?</summary>
 				<ol>
 					<li>
-						<p>Run this in a linux terminal:</p>
+						<p>Run this in a linux terminal (requires <code>argon2</code> package installed):</p>
 						<code style="word-break: break-all;">
-							echo "Q0g9IiQyIjtCPSIwMDQxIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGEyNTZzdW0pO0U9JHtIOiRESUZGOjR9O1tbICRFID09ICRCIF1dICYmIGVjaG8gJDEjJDIjJDMjJEkgJiYgZXhpdCAwOygoSSsrKSk7ZG9uZTs=" | base64 -d | bash -s %s %s %s
+							echo "Q0g9IiQyIjtCPSQocHJpbnRmICcwJS4wcycgJChzZXEgMSAkNCkpO2VjaG8gIldvcmtpbmcuLi4iO0k9MDt3aGlsZSB0cnVlOyBkbyBIPSQoZWNobyAtbiAkQ0gkSSB8IGFyZ29uMiAkMSAtaWQgLXQgJDUgLWsgJDYgLXAgMSAtbCAzMiAtcik7RT0ke0g6MDokNH07W1sgJEUgPT0gJEIgXV0gJiYgZWNobyAiT3V0cHV0OiIgJiYgZWNobyAkMSMkMiMkMyMkSSAmJiBleGl0IDA7KChJKyspKTtkb25lOwo=" | base64 -d | bash -s %s %s %s %s %s %s
 						</code>
-					<li>Set a cookie named <code>z_ddos_pow</code> with the value as the script output, and path <code>/</code>.
-					<li>Remove <code>/bot-check?</code> from the url, and reload the page.
+					<li>Paste the output from the script into the box and submit:
+					<form method="POST">
+						<textarea type="text" name="pow_response"></textarea>
+						<input type="submit" value="submit" />
+					</form>
 				</ol>
 			</details>
 ]]
@@ -146,25 +162,26 @@ local captcha_section_template = [[
 		<h3>
 			Please solve the captcha to continue.
 		</h3>
-		<form class="jsonly" method="POST">
+		<div id="captcha" class="jsonly">
 			<div class="%s" data-sitekey="%s" data-callback="onCaptchaSubmit"></div>
 			<script src="%s" async defer></script>
-		</form>
+		</div>
 ]]
 
 function _M.view(applet)
+
+	-- set response body and declare status code
 	local response_body = ""
 	local response_status_code
+
+	-- if request is GET, serve the challenge page
 	if applet.method == "GET" then
+
 		-- get the user_key#challenge#sig
 		local user_key = sha.bin_to_hex(randbytes(16))
 		local challenge_hash = utils.generate_secret(applet, pow_cookie_secret, user_key, true)
 		local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. challenge_hash)
 		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. signature
-		-- print_r(user_key)
-		-- print_r(challenge_hash)
-		-- print_r(signature)
-		-- print_r(combined_challenge)
 
 		-- define body sections
 		local site_name_body = ""
@@ -186,28 +203,47 @@ function _M.view(applet)
 		-- pow at least is always enabled when reaching bot-check page
 		site_name_body = string.format(site_name_section_template, host)
 		if captcha_enabled then
-			captcha_body = string.format(captcha_section_template, captcha_classname, captcha_sitekey, captcha_script_src)
+			captcha_body = string.format(captcha_section_template, captcha_classname,
+				captcha_sitekey, captcha_script_src)
 		else
 			pow_body = pow_section_template
-			noscript_extra_body = string.format(noscript_extra_template, user_key, challenge_hash, signature)
+			noscript_extra_body = string.format(noscript_extra_template, user_key, challenge_hash, signature,
+				pow_difficulty, pow_time, pow_kb)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(body_template, combined_challenge, site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
+		response_body = string.format(body_template, combined_challenge,
+			pow_difficulty, pow_time, pow_kb,
+			site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
+
+	-- if request is POST, check the answer to the pow/cookie
 	elseif applet.method == "POST" then
+
+		-- parsed POST body
 		local parsed_body = url.parseQuery(applet.receive(applet))
+
+		-- whether to set cookies sent as secure or not
+		local secure_cookie_flag = " Secure=true;"
+		if applet.sf:ssl_fc() == "0" then
+			secure_cookie_flag = ""
+		end
+
+		-- handle setting the captcha cookie
 		local user_captcha_response = parsed_body["h-captcha-response"] or parsed_body["g-recaptcha-response"]
 		if user_captcha_response then
+			-- format the url for verifying the captcha response
 			local captcha_url = string.format(
 				"https://%s%s",
 				core.backends[captcha_backend_name].servers[captcha_backend_name]:get_addr(),
 				captcha_siteverify_path
 			)
+			-- construct the captcha body to send to the captcha url
 			local captcha_body = url.buildQuery({
 				secret=captcha_secret,
 				response=user_captcha_response
 			})
+			-- instantiate an http client and make the request
 			local httpclient = core.httpclient()
 			local res = httpclient:post{
 				url=captcha_url,
@@ -217,42 +253,95 @@ function _M.view(applet)
 					[ "content-type" ] = { "application/x-www-form-urlencoded" }
 				}
 			}
+			-- try parsing the response as json
 			local status, api_response = pcall(json.decode, res.body)
 			if not status then
 				api_response = {}
 			end
+			-- the response was good i.e the captcha provider says they passed, give them a cookie
 			if api_response.success == true then
-				-- for captcha, they dont need to solve a POW but we check the user_hash and sig later
+
 				local user_key = sha.bin_to_hex(randbytes(16))
 				local user_hash = utils.generate_secret(applet, captcha_cookie_secret, user_key, true)
 				local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. user_hash)
 				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. signature
-				local secure_cookie_flag = " Secure=true;"
-				if applet.sf:ssl_fc() == "0" then
-					secure_cookie_flag = ""
-				end
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"z_ddos_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict;",
+						"z_ddos_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict;%s",
 						combined_cookie,
 						secure_cookie_flag
 					)
 				)
+
 			end
 		end
-		-- if failed captcha, will just get sent back here so 302 is fine
+
+		-- handle setting the POW cookie
+		local user_pow_response = parsed_body["pow_response"]
+		if user_pow_response then
+
+			-- split the response up (makes the nojs submission easier because it can be a single field)
+			local split_response = utils.split(user_pow_response, "#")
+			if #split_response == 4 then
+				local given_user_key = split_response[1]
+				local given_challenge_hash = split_response[2]
+				local given_signature = split_response[3]
+				local given_answer = split_response[4]
+
+				-- regenerate the challenge and compare it
+				local generated_challenge_hash = utils.generate_secret(applet, pow_cookie_secret, given_user_key, true)
+				if given_challenge_hash == generated_challenge_hash then
+
+					-- regenerate the signature and compare it
+					local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
+					if given_signature == generated_signature then
+
+						-- do the work with their given answer
+						local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
+
+						-- check the output is correct
+						local hash_output = utils.split(full_hash, '$')[5]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
+						local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
+						local hex_hash_sub = hex_hash_output:sub(0, pow_difficulty)
+
+						if hex_hash_sub == string.rep('0', pow_difficulty) then
+
+							-- the answer was good, give them a cookie
+							local signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
+							local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_answer .. "#" .. signature
+							applet:add_header(
+								"set-cookie",
+								string.format(
+									"z_ddos_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict;%s",
+									combined_cookie,
+									secure_cookie_flag
+								)
+							)
+
+						end
+					end
+				end
+			end
+		end
+
+		-- redirect them to their desired page in applet.qs (query string)
+		-- if they didn't get the appropriate cookies they will be sent back to the challenge page
 		response_status_code = 302
 		applet:add_header("location", applet.qs)
+
+	-- else if its another http method, just 403 them
 	else
-		-- other methods
 		response_status_code = 403
 	end
+
+	-- finish sending the response
 	applet:set_status(response_status_code)
 	applet:add_header("content-type", "text/html; charset=utf-8")
 	applet:add_header("content-length", string.len(response_body))
 	applet:start_response()
 	applet:send(response_body)
+
 end
 
 -- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
@@ -274,6 +363,7 @@ end
 function _M.check_captcha_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
 	local received_captcha_cookie = parsed_request_cookies["z_ddos_captcha"] or ""
+	-- split the cookie up
 	local split_cookie = utils.split(received_captcha_cookie, "#")
 	if #split_cookie ~= 3 then
 		return
@@ -304,22 +394,16 @@ function _M.check_pow_status(txn)
 	end
 	local given_user_key = split_cookie[1]
 	local given_challenge_hash = split_cookie[2]
-	local given_signature = split_cookie[3]
-	local given_nonce = split_cookie[4]
+	local given_answer = split_cookie[3]
+	local given_signature = split_cookie[4]
 	-- regenerate the challenge and compare it
 	local generated_challenge_hash = utils.generate_secret(txn, pow_cookie_secret, given_user_key, false)
 	if given_challenge_hash ~= generated_challenge_hash then
 		return
 	end
 	-- regenerate the signature and compare it
-	local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
-	if given_signature ~= generated_signature then
-		return
-	end
-	-- check the work
-	local completed_work = sha.sha256(generated_challenge_hash .. given_nonce)
-	local challenge_offset = tonumber(generated_challenge_hash:sub(1,1),16) * 2
-	if completed_work:sub(challenge_offset+1, challenge_offset+4) == '0041' then -- i dont know lua properly :^)
+	local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
+	if given_signature == generated_signature then
 		return txn:set_var("txn.pow_passed", true)
 	end
 end
