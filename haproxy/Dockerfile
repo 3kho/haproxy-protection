@@ -88,10 +88,9 @@ STOPSIGNAL SIGUSR1
 
 ADD haproxy/docker-entrypoint.sh /usr/local/bin/
 RUN ln -s usr/local/bin/docker-entrypoint.sh / # backwards compat
-
-# This is terrible mess but we need it for simple testing purposes of our POC
-RUN apt-get update && apt-get install socat dnsutils -y
-
+RUN apt update && apt install -y git lua5.3 liblua5.3-dev argon2 libargon2-dev luarocks
+RUN git config --global url."https://".insteadOf git://
+RUN luarocks install argon2
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # no USER for backwards compatibility (to try to avoid breaking existing users)

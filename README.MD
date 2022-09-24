@@ -37,6 +37,9 @@ Add some env vars to docker-compose file:
 - CHALLENGE_INCLUDES_IP - any value, whether to lock solved challenges to IP or tor circuit
 - BACKEND_NAME - Optional, name of backend to build from hosts.map
 - SERVER_PREFIX - Optional, prefix of server names used in server-template
+- POW_TIME - argon2 iterations
+- POW_KB - argon2 memory usage in KB
+- POW_DIFFICULTY - pow "difficulty" (you should change all 3 POW_ parameters to tune the difficulty)
 
 Add a domain name + backend IP to `haproxy/hosts.map` like:
 ```plain

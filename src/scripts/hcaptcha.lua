@@ -6,6 +6,18 @@ local cookie = require("cookie")
 local json = require("json")
 local sha = require("sha")
 local randbytes = require("randbytes")
+local argon2 = require("argon2")
+local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 3)
+local pow_kb = tonumber(os.getenv("POW_KB") or 6000)
+local pow_time = tonumber(os.getenv("POW_TIME") or 1)
+argon2.t_cost(pow_time)
+argon2.m_cost(pow_kb)
+argon2.parallelism(1)
+argon2.hash_len(32)
+argon2.variant(argon2.variants.argon2_id)
+
+-- Testing only
+-- require("socket")
 -- require("print_r")
 
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
@@ -88,9 +100,10 @@ local body_template = [[
 		<noscript>
 			<style>.jsonly{display:none}</style>
 		</noscript>
+		<script src="/js/argon2.js"></script>
 		<script src="/js/challenge.js"></script>
 	</head>
-	<body data-pow="%s">
+	<body data-pow="%s" data-diff="%s" data-time="%s" data-kb="%s">
 		%s
 		%s
 		%s
@@ -112,9 +125,9 @@ local noscript_extra_template = [[
 				<summary>No JavaScript?</summary>
 				<ol>
 					<li>
-						<p>Run this in a linux terminal:</p>
+						<p>Run this in a linux terminal (requires <code>argon2</code> package installed):</p>
 						<code style="word-break: break-all;">
-							echo "Q0g9IiQyIjtCPSIwMDQxIjtJPTA7RElGRj0kKCgxNiMke0NIOjA6MX0gKiAyKSk7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBzaGEyNTZzdW0pO0U9JHtIOiRESUZGOjR9O1tbICRFID09ICRCIF1dICYmIGVjaG8gJDEjJDIjJDMjJEkgJiYgZXhpdCAwOygoSSsrKSk7ZG9uZTs=" | base64 -d | bash -s %s %s %s
+							echo "Q0g9IiQyIjtCPSQocHJpbnRmICcwJS4wcycgJChzZXEgMSAkNCkpO2VjaG8gIldvcmtpbmcuLi4iO0k9MDt3aGlsZSB0cnVlOyBkbyBIPSQoZWNobyAtbiAkQ0gkSSB8IGFyZ29uMiAkMSAtaWQgLXQgJDUgLWsgJDYgLXAgMSAtbCAzMiAtcik7RT0ke0g6MDokNH07W1sgJEUgPT0gJEIgXV0gJiYgZWNobyAiT3V0cHV0OiIgJiYgZWNobyAkMSMkMiMkMyMkSSAmJiBleGl0IDA7KChJKyspKTtkb25lOwo=" | base64 -d | bash -s %s %s %s %s %s %s
 						</code>
 					<li>Paste the output from the script into the box and submit:
 					<form method="POST">
@@ -189,14 +202,18 @@ function _M.view(applet)
 		-- pow at least is always enabled when reaching bot-check page
 		site_name_body = string.format(site_name_section_template, host)
 		if captcha_enabled then
-			captcha_body = string.format(captcha_section_template, captcha_classname, captcha_sitekey, captcha_script_src)
+			captcha_body = string.format(captcha_section_template, captcha_classname,
+				captcha_sitekey, captcha_script_src)
 		else
 			pow_body = pow_section_template
-			noscript_extra_body = string.format(noscript_extra_template, user_key, challenge_hash, signature)
+			noscript_extra_body = string.format(noscript_extra_template, user_key, challenge_hash, signature,
+				pow_difficulty, pow_time, pow_kb)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(body_template, combined_challenge, site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
+		response_body = string.format(body_template, combined_challenge,
+			pow_difficulty, pow_time, pow_kb,
+			site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 
 	-- if request is POST, check the answer to the pow/cookie
@@ -262,6 +279,7 @@ function _M.view(applet)
 		-- handle setting the POW cookie
 		local user_pow_response = parsed_body["pow_response"]
 		if user_pow_response then
+
 			-- split the response up (makes the nojs submission easier because it can be a single field)
 			local split_response = utils.split(user_pow_response, "#")
 			if #split_response == 4 then
@@ -269,6 +287,7 @@ function _M.view(applet)
 				local given_challenge_hash = split_response[2]
 				local given_signature = split_response[3]
 				local given_answer = split_response[4]
+
 				-- regenerate the challenge and compare it
 				local generated_challenge_hash = utils.generate_secret(applet, pow_cookie_secret, given_user_key, true)
 				if given_challenge_hash == generated_challenge_hash then
@@ -278,11 +297,14 @@ function _M.view(applet)
 					if given_signature == generated_signature then
 
 						-- do the work with their given answer
-						local completed_work = sha.sha256(generated_challenge_hash .. given_answer) -- (TODO: replace this bit with argon2)
+						local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
 
 						-- check the output is correct
-						local challenge_offset = tonumber(generated_challenge_hash:sub(1,1),16) * 2
-						if completed_work:sub(challenge_offset+1, challenge_offset+4) == '0041' then
+						local hash_output = utils.split(full_hash, '$')[5]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
+						local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
+						local hex_hash_sub = hex_hash_output:sub(0, pow_difficulty)
+
+						if hex_hash_sub == string.rep('0', pow_difficulty) then
 
 							-- the answer was good, give them a cookie
 							local signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)

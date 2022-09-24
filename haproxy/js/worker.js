@@ -1,19 +1,19 @@
-async function hash(data, method) {
-	const buffer = new TextEncoder('utf-8').encode(data);
-	const hashBuffer = await crypto.subtle.digest(method, buffer)
-	return Array.from(new Uint8Array(hashBuffer));
-}
+importScripts('/js/argon2.js');
 
 onmessage = async function(e) {
-	const [challenge, id, threads] = e.data;
-	console.log('Worker thread', id,'got challenge', challenge);
+	const [userkey, challenge, diffString, argonOpts, id, threads] = e.data;
+	console.log('Worker thread', id, 'started');
 	let i = id;
-	let challengeIndex = parseInt(challenge[0], 16);
 	while(true) {
-		let result = await hash(challenge+i, 'sha-256');
-		if(result[challengeIndex] === 0x00
-			&& result[challengeIndex+1] === 0x41){
-			console.log('Worker thread found solution:', i);
+		const hash = await argon2.hash({
+			pass: challenge + i.toString(),
+			salt: userkey,
+			...argonOpts,
+		});
+		// This throttle seems to really help some browsers not stop the workers abruptly
+		i % 10 === 0 && await new Promise(res => setTimeout(res, 10));
+		if (hash.hashHex.startsWith(diffString)) {
+			console.log('Worker', id, 'found solution');
 			postMessage([id, i]);
 			break;
 		}
