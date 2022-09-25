@@ -57,10 +57,10 @@ const powFinished = new Promise((resolve, reject) => {
 				argonWorker.onmessage = messageHandler;
 				workers.push(argonWorker);
 			}
-			workers.forEach(async (w, i) => {
+			for (let i = 0; i < threads; i++) {
 				await new Promise(res => setTimeout(res, 100));
-				w.postMessage([userkey, challenge, diffString, argonOpts, i, threads]);
-			});
+				workers[i].postMessage([userkey, challenge, diffString, argonOpts, i, threads]);
+			}
 		} else {
 			console.warn('No webworker support, running in main/UI thread!');
 			let i = 0;
