@@ -267,8 +267,9 @@ function _M.view(applet)
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"z_ddos_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict;%s",
+						"z_ddos_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
 						combined_cookie,
+						applet.headers['host'][0],
 						secure_cookie_flag
 					)
 				)
@@ -312,8 +313,9 @@ function _M.view(applet)
 							applet:add_header(
 								"set-cookie",
 								string.format(
-									"z_ddos_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; SameSite=Strict;%s",
+									"z_ddos_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
 									combined_cookie,
+									applet.headers['host'][0],
 									secure_cookie_flag
 								)
 							)
