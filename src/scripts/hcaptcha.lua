@@ -179,7 +179,7 @@ function _M.view(applet)
 		-- get the user_key#challenge#sig
 		local user_key = sha.bin_to_hex(randbytes(16))
 		local challenge_hash = utils.generate_secret(applet, pow_cookie_secret, user_key, true)
-		local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. challenge_hash)
+		local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. challenge_hash)
 		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. signature
 
 		-- define body sections
@@ -262,7 +262,7 @@ function _M.view(applet)
 
 				local user_key = sha.bin_to_hex(randbytes(16))
 				local user_hash = utils.generate_secret(applet, captcha_cookie_secret, user_key, true)
-				local signature = sha.hmac(sha.sha256, hmac_cookie_secret, user_key .. user_hash)
+				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash)
 				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. signature
 				applet:add_header(
 					"set-cookie",
@@ -294,7 +294,7 @@ function _M.view(applet)
 				if given_challenge_hash == generated_challenge_hash then
 
 					-- regenerate the signature and compare it
-					local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
+					local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
 					if given_signature == generated_signature then
 
 						-- do the work with their given answer
@@ -308,7 +308,7 @@ function _M.view(applet)
 						if hex_hash_sub == string.rep('0', pow_difficulty) then
 
 							-- the answer was good, give them a cookie
-							local signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
+							local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
 							local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_answer .. "#" .. signature
 							applet:add_header(
 								"set-cookie",
@@ -378,7 +378,7 @@ function _M.check_captcha_status(txn)
 		return
 	end
 	-- regenerate the signature and compare it
-	local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_user_hash)
+	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_user_hash)
 	if given_signature == generated_signature then
 		return txn:set_var("txn.captcha_passed", true)
 	end
@@ -403,7 +403,7 @@ function _M.check_pow_status(txn)
 		return
 	end
 	-- regenerate the signature and compare it
-	local generated_signature = sha.hmac(sha.sha256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
+	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
 	if given_signature == generated_signature then
 		return txn:set_var("txn.pow_passed", true)
 	end
