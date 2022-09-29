@@ -26,7 +26,7 @@ function _M.generate_secret(context, salt, user_key, is_applet)
 		user_agent = context.sf:req_fhdr('user-agent') or ""
 	end
 
-	return sha.sha256(salt .. bucket .. ip .. user_key .. user_agent)
+	return sha.sha3_256(salt .. bucket .. ip .. user_key .. user_agent)
 
 end
 

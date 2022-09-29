@@ -1,30 +1,29 @@
-## HAProxy DDoS protection system
+## haproxy-protection
 
-A fork and further development of a proof of concept from https://github.com/mora9715/haproxy_ddos_protector, a HAProxy configuration and lua scripts allowing a challenge-response page where users solve a captcha and/or proof-of-work.
-Intended to stop bots, spam, ddos, 
+A fork and further development of a proof of concept from https://github.com/mora9715/haproxy_ddos_protector, a HAProxy configuration and lua scripts allowing a challenge-response page where users solve a captcha and/or proof-of-work. Intended to stop bots, spam, ddos.
 
 Integrates with https://gitgud.io/fatchan/haproxy-panel-next to add/remove/edit domains, protection rules, blocked ips, backend server IPs, etc during runtime.
 
 Improvements in this fork:
 
 - Add a proof-of-work element, instead of only captcha.
-- Add examples and support for .onion/tor using the HAProxy PROXY protocol to provide some kind of "ip" discrimination of tor users (circuit identifiers).
-- Use HAProxy http-request return to improve performance/caching for the challenge page, without an extra backend http server.
-- Improved the appearance of the challenge page.
-- Remove hcaptcha dns resolution hack, use proper backend address.
+- Supports hcaptcha or recaptcha.
+- Support .onion/tor with the HAProxy PROXY protocol, using circuit identifiers as a substitute for IPs.
+- Use HAProxy `http-request return` directive to directly serve challenge pages from the edge, with no separate backend.
 - Fix multiple security issues that could result in bypassing the captcha.
 - Add a bucket duration for cookie validity, so valid cookies don't last forever.
-- Cluster toggle, for pow mode only.
 - Choose protection modes "none", "pow" or "pow+captcha" per-domain or per-domain+path, with paths taking priority.
-- Whitelist IPs/subnets.
+- Provide a bash script that solves the proof-of-work and a form submission box for noscript users.
+- Whitelist or blacklist IPs/subnets.
 - Maintenance mode page for selected domains.
-- In POW only mode, provide instructions and an encoded script to find the solution.
+- Improved the appearance of the challenge page.
 - Many bugfixes.
 
-#### How to test
+#### Environment variables
 
-Add some env vars to docker-compose file:
+For docker, these are in docker-compose.yml. For production deployments, add them to `/etc/default/haproxy`.
 
+NOTE: Use either HCAPTCHA_ or RECAPTHCA_, not both.
 - HCAPTCHA_SITEKEY - your hcaptcha site key
 - HCAPTCHA_SECRET - your hcaptcha secret key
 - RECAPTCHA_SITEKEY - your recaptcha site key
@@ -39,12 +38,9 @@ Add some env vars to docker-compose file:
 - SERVER_PREFIX - Optional, prefix of server names used in server-template
 - POW_TIME - argon2 iterations
 - POW_KB - argon2 memory usage in KB
-- POW_DIFFICULTY - pow "difficulty" (you should change all 3 POW_ parameters to tune the difficulty)
+- POW_DIFFICULTY - pow "difficulty" (you should use all 3 POW_ parameters to tune the difficulty)
 
-Add a domain name + backend IP to `haproxy/hosts.map` like:
-```plain
-localhost 127.0.0.1:81
-```
+#### Run in docker (for testing/development)
 
 Run docker compose:
 ```bash
@@ -53,20 +49,27 @@ docker compose up
 
 Visit http://localhost
 
-DDoS-protection mode is enabled by default.
-
 #### Installation
 
-Before installing the tool, ensure that HAProxy is built with Lua support and version >=2.5 for the native httpclient support. For Debian and Ubuntu (and -based) distros, see https://haproxy.debian.net/ for packages.
+Requires HAProxy compiled with lua support, and version >=2.5 for the native lua httpclient support. For Debian and Ubuntu (and -based) distros, see https://haproxy.debian.net/ for packages.
 
-- Copy [haproxy.cfg](haproxy/haproxy.cfg) to /etc/haproxy
-  - Edit the `lua-load` directive to be the absolute path to [register.lua](src/scripts/register.lua)
-  - Edit the paths of challenge.js and worker.js in the `http-request return` directive to the absolut path to the respective files in the haproxy/js folder
-- Copy or link [scripts](src/scripts) to /etc/haproxy/scripts
-- Copy or link [libs](src/libs) to /etc/haproxy/libs (or a path where Lua looks for modules).
-- Copy the map files from the haproxy folder to /etc/haproxy
+- Clone the repo somewhere. `/var/www/haproxy-protection` works.
+- Copy [haproxy.cfg](haproxy/haproxy.cfg) to `/etc/haproxy/haproxy.cfg`.
+  - Please note this configuration is very minimal, and is simply an example configuration for haproxy-protection. You are expected to customise it significantly or otherwise copy the relevant parts into your own haproxy config.
+- Copy (preferably link) [scripts](src/scripts) to `/etc/haproxy/scripts`.
+- Copy (preferably link) [libs](src/libs) to `/etc/haproxy/libs`.
+- Copy the map files from haproxy folder to `/etc/haproxy`.
+- Install argon2, and the lua argon2 module with luarocks:
+```bash
+sudo apt install -y git lua5.3 liblua5.3-dev argon2 libargon2-dev luarocks
+sudo git config --global url."https://".insteadOf git:// #don't ask.
+sudo luarocks install argon2
+```
+- Test your haproxy config, `sudo haproxy -c -V -f /etc/haproxy/haproxy.cfg`. You should see "Configuration file is valid".
 
-#### Screenshot
+If you have problems, read the error messages before opening an issue that is simply a bad configuration.
 
-![captcha](img/captcha.png "captcha mode (pow done asynchronously in background)")
+#### Screenshots
+
 ![nocaptcha](img/nocaptcha.png "no captcha mode")
+![captcha](img/captcha.png "captcha mode (pow done asynchronously in background)")
