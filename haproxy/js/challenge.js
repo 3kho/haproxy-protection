@@ -19,7 +19,9 @@ function postResponse(powResponse, captchaResponse) {
 		redirect: 'manual',
 	}).then(res => {
 		finishRedirect();
-	})
+	}).catch(err => {
+		document.querySelector('.lds-ring').insertAdjacentHTML('afterend', '<p class="red">An error occurred.</p>');
+	});
 }
 
 const powFinished = new Promise((resolve, reject) => {
@@ -33,7 +35,7 @@ const powFinished = new Promise((resolve, reject) => {
 			type: argon2.ArgonType.Argon2id,
 		};
 		console.log('Got pow', pow, 'with difficulty', diff);
-		const diffString = '0'.repeat(diff);
+		const diffString = '0'.repeat(Math.floor(diff/8));
 		const combined = pow;
 		const [userkey, challenge, signature] = combined.split("#");
 		const start = Date.now();
@@ -59,7 +61,7 @@ const powFinished = new Promise((resolve, reject) => {
 			}
 			for (let i = 0; i < threads; i++) {
 				await new Promise(res => setTimeout(res, 100));
-				workers[i].postMessage([userkey, challenge, diffString, argonOpts, i, threads]);
+				workers[i].postMessage([userkey, challenge, diff, diffString, argonOpts, i, threads]);
 			}
 		} else {
 			console.warn('No webworker support, running in main/UI thread!');
@@ -71,7 +73,9 @@ const powFinished = new Promise((resolve, reject) => {
 					salt: userkey,
 					...argonOpts,
 				});
-				if (hash.hashHex.startsWith(diffString)) {
+				if (hash.hashHex.startsWith(diffString)
+					&& ((parseInt(hash.hashHex[diffString.length],16) &
+						0xff >> (((diffString.length+1)*8)-diff)) === 0)) {
 					console.log('Main thread found solution:', hash.hashHex, 'in', (Date.now()-start)+'ms');
 					break;
 				}

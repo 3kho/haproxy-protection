@@ -12,7 +12,7 @@ function _M.generate_secret(context, salt, user_key, is_applet)
 
 	-- optional IP to lock challenges/user_keys to IP (for clearnet or single-onion aka 99% of cases)
 	local ip = ""
-	if challenge_includes_ip then
+	if challenge_includes_ip == "1" then
 		ip = context.sf:src()
 	end
 
@@ -36,6 +36,19 @@ function _M.split(inputstr, sep)
 		table.insert(t, str)
 	end
 	return t
+end
+
+function _M.checkdiff(hash, diff)
+	local i = 1
+	for j = 0, (diff-8), 8 do
+		if hash:sub(i, i) ~= "0" then
+			return false
+		end
+		i = i + 1
+	end
+	local lnm = tonumber(hash:sub(i, i), 16)
+	local msk = 0xff >> ((i*8)-diff)
+	return (lnm & msk) == 0
 end
 
 return _M
