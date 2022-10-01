@@ -68,7 +68,11 @@ const powFinished = new Promise((resolve, reject) => {
 		const [userkey, challenge, signature] = combined.split("#");
 		const start = Date.now();
 		if (window.Worker) {
-			const threads = Math.min(8,Math.ceil(window.navigator.hardwareConcurrency/2));
+			const cpuThreads = window.navigator.hardwareConcurrency;
+			const isTor = location.hostname.endsWith('.onion');
+			/* Try to use all threads on tor, because tor limits threads for anti fingerprinting but this
+			   makes it awfully slow because workerThreads will always be = 1 */
+			const workerThreads = isTor ? cpuThreads : Math.max(Math.ceil(cpuThreads/2),cpuThreads-1);
 			let finished = false;
 			const messageHandler = (e) => {
 				if (finished) { return; }
@@ -82,14 +86,14 @@ const powFinished = new Promise((resolve, reject) => {
 				}, dummyTime);
 			}
 			const workers = [];
-			for (let i = 0; i < threads; i++) {
+			for (let i = 0; i < workerThreads; i++) {
 				const argonWorker = new Worker('/js/worker.js');
 				argonWorker.onmessage = messageHandler;
 				workers.push(argonWorker);
 			}
-			for (let i = 0; i < threads; i++) {
+			for (let i = 0; i < workerThreads; i++) {
 				await new Promise(res => setTimeout(res, 100));
-				workers[i].postMessage([userkey, challenge, diff, diffString, argonOpts, i, threads]);
+				workers[i].postMessage([userkey, challenge, diff, diffString, argonOpts, i, workerThreads]);
 			}
 		} else {
 			console.warn('No webworker support, running in main/UI thread!');
