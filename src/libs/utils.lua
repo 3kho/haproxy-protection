@@ -3,7 +3,9 @@ local _M = {}
 local sha = require("sha")
 local secret_bucket_duration = tonumber(os.getenv("BUCKET_DURATION"))
 local challenge_includes_ip = os.getenv("CHALLENGE_INCLUDES_IP")
+local tor_control_port_password = os.getenv("TOR_CONTROL_PORT_PASSWORD")
 
+-- generate the challenge hash/user hash
 function _M.generate_secret(context, salt, user_key, is_applet)
 
 	-- time bucket for expiry
@@ -30,14 +32,16 @@ function _M.generate_secret(context, salt, user_key, is_applet)
 
 end
 
+-- split string by delimiter
 function _M.split(inputstr, sep)
 	local t = {}
-	for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+	for str in string.gmatch(inputstr, "([^"..sep.."]*)") do
 		table.insert(t, str)
 	end
 	return t
 end
 
+-- return true if hash passes difficulty
 function _M.checkdiff(hash, diff)
 	local i = 1
 	for j = 0, (diff-8), 8 do
@@ -49,6 +53,16 @@ function _M.checkdiff(hash, diff)
 	local lnm = tonumber(hash:sub(i, i), 16)
 	local msk = 0xff >> ((i*8)-diff)
 	return (lnm & msk) == 0
+end
+
+-- connect to the tor control port and instruct it to close a circuit
+function _M.send_tor_control_port(circuit_identifier)
+	local tcp = core.tcp();
+	tcp:settimeout(1);
+	tcp:connect("127.0.0.1", 9051);
+	-- not buffered, so we are better off sending it all at once
+	tcp:send('AUTHENTICATE "' .. tor_control_port_password .. '"\nCLOSECIRCUIT ' .. circuit_identifier ..'\n')
+	tcp:close()
 end
 
 return _M

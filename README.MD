@@ -39,6 +39,7 @@ NOTE: Use either HCAPTCHA_ or RECAPTHCA_, not both.
 - POW_TIME - argon2 iterations
 - POW_KB - argon2 memory usage in KB
 - POW_DIFFICULTY - pow "difficulty" (you should use all 3 POW_ parameters to tune the difficulty)
+- TOR_CONTROL_PORT_PASSWORD - the control port password for tor daemon
 
 #### Run in docker (for testing/development)
 
@@ -68,6 +69,22 @@ sudo luarocks install argon2
 - Test your haproxy config, `sudo haproxy -c -V -f /etc/haproxy/haproxy.cfg`. You should see "Configuration file is valid".
 
 If you have problems, read the error messages before opening an issue that is simply a bad configuration.
+
+### Tor
+
+- Check the `bind` line comments. Switch to the one with `accept-proxy` and `option forwardfor`
+- To generate a tor control port password:
+```
+$ tor --hash-password example
+16:0175C41DDD88C5EA605582C858BC08FA29014215F233479A99FE78EDED
+```
+- Set `TOR_CONTROL_PORT_PASSWORD` env var to the same password (NOT the output hash)
+- Add to your torrc (where xxxx is the output of `tor --hash-password`):
+```
+ControlPort 9051
+HashedControlPassword xxxxxxxxxxxxxxxxx
+```
+- Don't forget to restart tor
 
 #### Screenshots
 

@@ -132,10 +132,10 @@ local noscript_extra_template = [[
 						<code style="word-break: break-all;">
 							echo "Q0g9IiQyIjtCPSQocHJpbnRmICcwJS4wcycgJChzZXEgMSAkNCkpO2VjaG8gIldvcmtpbmcuLi4iO0k9MDt3aGlsZSB0cnVlOyBkbyBIPSQoZWNobyAtbiAkQ0gkSSB8IGFyZ29uMiAkMSAtaWQgLXQgJDUgLWsgJDYgLXAgMSAtbCAzMiAtcik7RT0ke0g6MDokNH07W1sgJEUgPT0gJEIgXV0gJiYgZWNobyAiT3V0cHV0OiIgJiYgZWNobyAkMSMkMiMkMyMkSSAmJiBleGl0IDA7KChJKyspKTtkb25lOwo=" | base64 -d | bash -s %s %s %s %s %s %s
 						</code>
-					<li>Paste the output from the script into the box and submit:
-					<form method="POST">
-						<textarea type="text" name="pow_response"></textarea>
-						<input type="submit" value="submit" />
+					<li>Paste the script output into the box and submit:
+					<form method="post">
+						<textarea name="pow_response" placeholder="script output" required></textarea>
+						<div><input type="submit" value="submit" /></div>
 					</form>
 				</ol>
 			</details>
@@ -144,7 +144,7 @@ local noscript_extra_template = [[
 -- title with favicon and hostname
 local site_name_section_template = [[
 		<h3 class="pt">
-			<img src="/favicon.ico" width="32" height="32">
+			<img src="/favicon.ico" width="32" height="32" alt="favicon">
 			%s
 		</h3>
 ]]
@@ -169,6 +169,24 @@ local captcha_section_template = [[
 			<script src="%s" async defer></script>
 		</div>
 ]]
+
+-- kill a tor circuit
+function _M.kill_tor_circuit(txn)
+	local ip = txn.sf:src()
+	if ip:sub(1,19) ~= "fc00:dead:beef:4dad" then
+		return -- not a tor circuit id/ip. we shouldn't get here, but just in case.
+	end
+	-- split the IP, take the last 2 sections
+	local split_ip = utils.split(ip, ":")
+	local aa_bb = split_ip[5] or "0000"
+	local cc_dd = split_ip[6] or "0000"
+	aa_bb = string.rep("0", 4 - #aa_bb) .. aa_bb
+	cc_dd = string.rep("0", 4 - #cc_dd) .. cc_dd
+	-- convert the last 2 sections to a number from hex, which makes the circuit ID
+	local circuit_identifier = tonumber(aa_bb..cc_dd, 16)
+	print('Closing Tor circuit ID: '..circuit_identifier..', "IP": '..ip)
+	utils.send_tor_control_port(circuit_identifier)
+end
 
 function _M.view(applet)
 
@@ -222,6 +240,9 @@ function _M.view(applet)
 	-- if request is POST, check the answer to the pow/cookie
 	elseif applet.method == "POST" then
 
+		-- if they fail, set a var for use in ACLs later
+		local valid_submission = false
+
 		-- parsed POST body
 		local parsed_body = url.parseQuery(applet.receive(applet))
 
@@ -231,9 +252,58 @@ function _M.view(applet)
 			secure_cookie_flag = ""
 		end
 
+		-- handle setting the POW cookie
+		local user_pow_response = parsed_body["pow_response"]
+		if user_pow_response then
+
+			-- split the response up (makes the nojs submission easier because it can be a single field)
+			local split_response = utils.split(user_pow_response, "#")
+
+			if #split_response == 4 then
+				local given_user_key = split_response[1]
+				local given_challenge_hash = split_response[2]
+				local given_signature = split_response[3]
+				local given_answer = split_response[4]
+
+				-- regenerate the challenge and compare it
+				local generated_challenge_hash = utils.generate_secret(applet, pow_cookie_secret, given_user_key, true)
+				if given_challenge_hash == generated_challenge_hash then
+
+					-- regenerate the signature and compare it
+					local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
+					if given_signature == generated_signature then
+
+						-- do the work with their given answer
+						local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
+
+						-- check the output is correct
+						local hash_output = utils.split(full_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
+						local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
+						if utils.checkdiff(hex_hash_output, pow_difficulty) then
+
+							-- the answer was good, give them a cookie
+							local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
+							local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_answer .. "#" .. signature
+							applet:add_header(
+								"set-cookie",
+								string.format(
+									"z_ddos_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
+									combined_cookie,
+									applet.headers['host'][0],
+									secure_cookie_flag
+								)
+							)
+							valid_submission = true
+
+						end
+					end
+				end
+			end
+		end
+
 		-- handle setting the captcha cookie
 		local user_captcha_response = parsed_body["h-captcha-response"] or parsed_body["g-recaptcha-response"]
-		if user_captcha_response then
+		if valid_submission and user_captcha_response then -- only check captcha if POW is already correct
 			-- format the url for verifying the captcha response
 			local captcha_url = string.format(
 				"https://%s%s",
@@ -276,56 +346,13 @@ function _M.view(applet)
 						secure_cookie_flag
 					)
 				)
+				valid_submission = valid_submission and true
 
 			end
 		end
 
-		-- handle setting the POW cookie
-		local user_pow_response = parsed_body["pow_response"]
-		if user_pow_response then
-
-			-- split the response up (makes the nojs submission easier because it can be a single field)
-			local split_response = utils.split(user_pow_response, "#")
-			if #split_response == 4 then
-				local given_user_key = split_response[1]
-				local given_challenge_hash = split_response[2]
-				local given_signature = split_response[3]
-				local given_answer = split_response[4]
-
-				-- regenerate the challenge and compare it
-				local generated_challenge_hash = utils.generate_secret(applet, pow_cookie_secret, given_user_key, true)
-				if given_challenge_hash == generated_challenge_hash then
-
-					-- regenerate the signature and compare it
-					local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
-					if given_signature == generated_signature then
-
-						-- do the work with their given answer
-						local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
-
-						-- check the output is correct
-						local hash_output = utils.split(full_hash, '$')[5]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
-						local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
-
-						if utils.checkdiff(hex_hash_output, pow_difficulty) then
-
-							-- the answer was good, give them a cookie
-							local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
-							local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_answer .. "#" .. signature
-							applet:add_header(
-								"set-cookie",
-								string.format(
-									"z_ddos_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
-									combined_cookie,
-									applet.headers['host'][0],
-									secure_cookie_flag
-								)
-							)
-
-						end
-					end
-				end
-			end
+		if not valid_submission then
+			_M.kill_tor_circuit(applet)
 		end
 
 		-- redirect them to their desired page in applet.qs (query string)
