@@ -1,6 +1,25 @@
+function insertError(str) {
+	const ring = document.querySelector('.lds-ring');
+	ring.insertAdjacentHTML('afterend', `<p class="red">Error: ${str}</p>`);
+	ring.remove();
+}
+
 function finishRedirect() {
 	window.location=location.search.slice(1)+location.hash || "/";
 }
+
+const wasmSupported = (() => {
+    try {
+        if (typeof WebAssembly === "object"
+            && typeof WebAssembly.instantiate === "function") {
+            const module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
+            if (module instanceof WebAssembly.Module)
+                return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
+        }
+    } catch (e) {
+    }
+    return false;
+})();
 
 function postResponse(powResponse, captchaResponse) {
 	const body = {
@@ -18,12 +37,23 @@ function postResponse(powResponse, captchaResponse) {
 		body: new URLSearchParams(body),
 		redirect: 'manual',
 	}).then(res => {
+		const s = res.status;
+		if (s >= 400 && s < 500) {
+			return insertError('bad challenge response request.');
+		} else if (s >= 500) {
+			return insertError('server responded with error.');
+		}
 		finishRedirect();
-	})
+	}).catch(err => {
+		insertError('failed to send challenge response.');
+	});
 }
 
 const powFinished = new Promise((resolve, reject) => {
 	window.addEventListener('DOMContentLoaded', async () => {
+		if (!wasmSupported) {
+			return insertError('browser does not support WebAssembly.');
+		}
 		const { time, kb, pow, diff } = document.querySelector('[data-pow]').dataset;
 		const argonOpts = {
 			time: time,
@@ -33,12 +63,16 @@ const powFinished = new Promise((resolve, reject) => {
 			type: argon2.ArgonType.Argon2id,
 		};
 		console.log('Got pow', pow, 'with difficulty', diff);
-		const diffString = '0'.repeat(diff);
+		const diffString = '0'.repeat(Math.floor(diff/8));
 		const combined = pow;
 		const [userkey, challenge, signature] = combined.split("#");
 		const start = Date.now();
 		if (window.Worker) {
-			const threads = Math.min(8,Math.ceil(window.navigator.hardwareConcurrency/2));
+			const cpuThreads = window.navigator.hardwareConcurrency;
+			const isTor = location.hostname.endsWith('.onion');
+			/* Try to use all threads on tor, because tor limits threads for anti fingerprinting but this
+			   makes it awfully slow because workerThreads will always be = 1 */
+			const workerThreads = isTor ? cpuThreads : Math.max(Math.ceil(cpuThreads/2),cpuThreads-1);
 			let finished = false;
 			const messageHandler = (e) => {
 				if (finished) { return; }
@@ -52,14 +86,14 @@ const powFinished = new Promise((resolve, reject) => {
 				}, dummyTime);
 			}
 			const workers = [];
-			for (let i = 0; i < threads; i++) {
+			for (let i = 0; i < workerThreads; i++) {
 				const argonWorker = new Worker('/js/worker.js');
 				argonWorker.onmessage = messageHandler;
 				workers.push(argonWorker);
 			}
-			for (let i = 0; i < threads; i++) {
+			for (let i = 0; i < workerThreads; i++) {
 				await new Promise(res => setTimeout(res, 100));
-				workers[i].postMessage([userkey, challenge, diffString, argonOpts, i, threads]);
+				workers[i].postMessage([userkey, challenge, diff, diffString, argonOpts, i, workerThreads]);
 			}
 		} else {
 			console.warn('No webworker support, running in main/UI thread!');
@@ -71,7 +105,9 @@ const powFinished = new Promise((resolve, reject) => {
 					salt: userkey,
 					...argonOpts,
 				});
-				if (hash.hashHex.startsWith(diffString)) {
+				if (hash.hashHex.startsWith(diffString)
+					&& ((parseInt(hash.hashHex[diffString.length],16) &
+						0xff >> (((diffString.length+1)*8)-diff)) === 0)) {
 					console.log('Main thread found solution:', hash.hashHex, 'in', (Date.now()-start)+'ms');
 					break;
 				}

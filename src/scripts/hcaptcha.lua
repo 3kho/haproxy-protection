@@ -7,7 +7,7 @@ local json = require("json")
 local sha = require("sha")
 local randbytes = require("randbytes")
 local argon2 = require("argon2")
-local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 3)
+local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
 local pow_kb = tonumber(os.getenv("POW_KB") or 6000)
 local pow_time = tonumber(os.getenv("POW_TIME") or 1)
 argon2.t_cost(pow_time)
@@ -48,6 +48,9 @@ else
 end
 
 function _M.setup_servers()
+	if pow_difficulty < 8 then
+		error("POW_DIFFICULTY must be > 8. Around 16-32 is better")
+	end
 	local backend_name = os.getenv("BACKEND_NAME")
 	local server_prefix = os.getenv("SERVER_PREFIX")
 	if backend_name == nil or server_prefix == nil then
@@ -208,7 +211,7 @@ function _M.view(applet)
 		else
 			pow_body = pow_section_template
 			noscript_extra_body = string.format(noscript_extra_template, user_key, challenge_hash, signature,
-				pow_difficulty, pow_time, pow_kb)
+				math.ceil(pow_difficulty/8), pow_time, pow_kb)
 		end
 
 		-- sub in the body sections
@@ -304,9 +307,8 @@ function _M.view(applet)
 						-- check the output is correct
 						local hash_output = utils.split(full_hash, '$')[5]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
 						local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
-						local hex_hash_sub = hex_hash_output:sub(0, pow_difficulty)
 
-						if hex_hash_sub == string.rep('0', pow_difficulty) then
+						if utils.checkdiff(hex_hash_output, pow_difficulty) then
 
 							-- the answer was good, give them a cookie
 							local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
