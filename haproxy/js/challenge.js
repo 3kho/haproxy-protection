@@ -1,6 +1,25 @@
+function insertError(str) {
+	const ring = document.querySelector('.lds-ring');
+	ring.insertAdjacentHTML('afterend', `<p class="red">Error: ${str}</p>`);
+	ring.remove();
+}
+
 function finishRedirect() {
 	window.location=location.search.slice(1)+location.hash || "/";
 }
+
+const wasmSupported = (() => {
+    try {
+        if (typeof WebAssembly === "object"
+            && typeof WebAssembly.instantiate === "function") {
+            const module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
+            if (module instanceof WebAssembly.Module)
+                return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
+        }
+    } catch (e) {
+    }
+    return false;
+})();
 
 function postResponse(powResponse, captchaResponse) {
 	const body = {
@@ -18,14 +37,23 @@ function postResponse(powResponse, captchaResponse) {
 		body: new URLSearchParams(body),
 		redirect: 'manual',
 	}).then(res => {
+		const s = res.status;
+		if (s >= 400 && s < 500) {
+			return insertError('bad challenge response request.');
+		} else if (s >= 500) {
+			return insertError('server responded with error.');
+		}
 		finishRedirect();
 	}).catch(err => {
-		document.querySelector('.lds-ring').insertAdjacentHTML('afterend', '<p class="red">An error occurred.</p>');
+		insertError('failed to send challenge response.');
 	});
 }
 
 const powFinished = new Promise((resolve, reject) => {
 	window.addEventListener('DOMContentLoaded', async () => {
+		if (!wasmSupported) {
+			return insertError('browser does not support WebAssembly.');
+		}
 		const { time, kb, pow, diff } = document.querySelector('[data-pow]').dataset;
 		const argonOpts = {
 			time: time,
