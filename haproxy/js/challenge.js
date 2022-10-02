@@ -1,7 +1,9 @@
 function insertError(str) {
 	const ring = document.querySelector('.lds-ring');
-	ring.insertAdjacentHTML('afterend', `<p class="red">Error: ${str}</p>`);
-	ring.remove();
+	const captcha = document.querySelector('#captcha');
+	(ring || captcha).insertAdjacentHTML('afterend', `<p class="red">Error: ${str}</p>`);
+	ring && ring.remove();
+	captcha && captcha.remove();
 }
 
 function finishRedirect() {
