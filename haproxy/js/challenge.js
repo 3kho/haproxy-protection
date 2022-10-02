@@ -89,7 +89,7 @@ const powFinished = new Promise((resolve, reject) => {
 					const elapsedSec = Math.floor((Date.now()-start)/1000);
 					const hps = Math.floor(totalHashes/elapsedSec);
 					const requiredSec = Math.floor(eHashes/hps) * 1.5; //estimate 1.5x time
-					return updateElem('.powstatus', `Proof-of-work: ${hps}H/s, ~${requiredSec-elapsedSec}s remaining.`);
+					return updateElem('.powstatus', `Proof-of-work: ${hps}H/s, ~${Math.floor(requiredSec-elapsedSec)}s remaining`);
 				}
 				if (finished) { return; }
 				finished = true;
