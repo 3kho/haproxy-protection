@@ -87,6 +87,7 @@ local body_template = [[
 			@media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
 			.h-captcha,.g-recaptcha{min-height:85px;display:block}
 			.red{color:red;font-weight:bold}
+			.powstatus{color:green;font-weight:bold}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%}
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:1200px;margin:0 auto;padding: 0 20px}
@@ -115,6 +116,7 @@ local body_template = [[
 			<p class="red">JavaScript is required on this page.</p>
 			%s
 		</noscript>
+		<div class="powstatus"></div>
 		<footer>
 			<img src="/img/footerlogo.png" />
 			<p>Security and Performance by <a href="https://BasedFlare.com">BasedFlare</a></p>
@@ -145,7 +147,7 @@ local noscript_extra_template = [[
 -- title with favicon and hostname
 local site_name_section_template = [[
 		<h3 class="pt">
-			<img src="/favicon.ico" width="32" height="32" alt="favicon">
+			<img src="/favicon.ico" width="32" height="32" alt="icon">
 			%s
 		</h3>
 ]]

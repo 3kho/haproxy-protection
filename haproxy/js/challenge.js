@@ -1,9 +1,15 @@
+function updateElem(selector, text) {
+	document.querySelector(selector)
+		.innerText = text;
+}
+
 function insertError(str) {
 	const ring = document.querySelector('.lds-ring');
 	const captcha = document.querySelector('#captcha');
 	(ring || captcha).insertAdjacentHTML('afterend', `<p class="red">Error: ${str}</p>`);
 	ring && ring.remove();
 	captcha && captcha.remove();
+	updateElem('.powstatus', '');
 }
 
 function finishRedirect() {
@@ -65,6 +71,7 @@ const powFinished = new Promise((resolve, reject) => {
 			type: argon2.ArgonType.Argon2id,
 		};
 		console.log('Got pow', pow, 'with difficulty', diff);
+		const eHashes = Math.pow(16, Math.floor(diff/8)) * ((diff%8)*2);
 		const diffString = '0'.repeat(Math.floor(diff/8));
 		const combined = pow;
 		const [userkey, challenge, signature] = combined.split("#");
@@ -77,8 +84,18 @@ const powFinished = new Promise((resolve, reject) => {
 			const workerThreads = isTor ? cpuThreads : Math.max(Math.ceil(cpuThreads/2),cpuThreads-1);
 			let finished = false;
 			const messageHandler = (e) => {
+				if (e.data.length === 1) {
+					const totalHashes = e.data[0]; //assumes all worker threads are same speed
+					const elapsedSec = Math.floor((Date.now()-start)/1000);
+					const hps = Math.floor(totalHashes/elapsedSec);
+					const requiredSec = Math.floor(eHashes/hps) * 1.5; //estimate 1.5x time
+					const remainingSec = Math.max(0, Math.floor(requiredSec-elapsedSec)); //dont show negative time
+					return updateElem('.powstatus', `Proof-of-work: ${hps}H/s, ~${remainingSec}s remaining`);
+				}
 				if (finished) { return; }
 				finished = true;
+				const hasCaptcha = document.getElementById('captcha');
+				updateElem('.powstatus', `Found proof-of-work solution.${!hasCaptcha?' Submitting...':''}`);
 				workers.forEach(w => w.terminate());
 				const [workerId, answer] = e.data;
 				console.log('Worker', workerId, 'returned answer', answer, 'in', Date.now()-start+'ms');
