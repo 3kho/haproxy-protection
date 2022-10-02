@@ -85,7 +85,7 @@ const powFinished = new Promise((resolve, reject) => {
 			let finished = false;
 			const messageHandler = (e) => {
 				if (e.data.length === 1) {
-					const totalHashes = e.data[0]*workerThreads; //assumes all worker threads are same speed
+					const totalHashes = e.data[0]; //assumes all worker threads are same speed
 					const elapsedSec = Math.floor((Date.now()-start)/1000);
 					const hps = Math.floor(totalHashes/elapsedSec);
 					const requiredSec = Math.floor(eHashes/hps) * 1.5; //estimate 1.5x time

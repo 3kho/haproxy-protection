@@ -6,7 +6,7 @@ onmessage = async function(e) {
 	let i = id;
 	if (id === 0) {
 		setInterval(() => {
-			postMessage([i/threads]);
+			postMessage([i]);
 		}, 500);
 	}
 	while(true) {
