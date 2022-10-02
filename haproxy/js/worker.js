@@ -4,6 +4,11 @@ onmessage = async function(e) {
 	const [userkey, challenge, diff, diffString, argonOpts, id, threads] = e.data;
 	console.log('Worker thread', id, 'started');
 	let i = id;
+	if (id === 0) {
+		setInterval(() => {
+			postMessage([i/threads]);
+		}, 500);
+	}
 	while(true) {
 		const hash = await argon2.hash({
 			pass: challenge + i.toString(),
