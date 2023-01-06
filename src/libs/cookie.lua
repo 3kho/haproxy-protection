@@ -11,10 +11,11 @@ local SEMICOLON     = byte(";")
 local SPACE         = byte(" ")
 local HTAB          = byte("\t")
 
+local MAX_LEN       = 10 * 1024 -- in case you are a dumbass and set a high tune.maxrewrite
+local MAX_COOKIES   = 100
 
 local _M = {}
 _M._VERSION = '0.01'
-
 
 function _M.get_cookie_table(text_cookie)
     if type(text_cookie) ~= "string" then
@@ -27,10 +28,16 @@ function _M.get_cookie_table(text_cookie)
 
     local n = 0
     local len = #text_cookie
+    if len > MAX_LEN then
+        return {}
+    end
 
     for i=1, len do
         if byte(text_cookie, i) == SEMICOLON then
             n = n + 1
+            if n > MAX_COOKIES then
+                return {}
+            end
         end
     end
 
