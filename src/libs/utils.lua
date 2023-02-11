@@ -66,4 +66,3 @@ function _M.send_tor_control_port(circuit_identifier)
 end
 
 return _M
-

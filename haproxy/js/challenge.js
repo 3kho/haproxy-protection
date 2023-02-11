@@ -25,6 +25,7 @@ const wasmSupported = (() => {
                 return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
         }
     } catch (e) {
+		console.error(e);
     }
     return false;
 })();
@@ -37,7 +38,7 @@ function postResponse(powResponse, captchaResponse) {
 		body['h-captcha-response'] = captchaResponse;
 		body['g-recaptcha-response'] = captchaResponse;
 	}
-	fetch('/bot-check', {
+	fetch('/.basedflare/bot-check', {
 		method: 'POST',
 		headers: {
 		  'Content-Type': 'application/x-www-form-urlencoded',
@@ -52,7 +53,7 @@ function postResponse(powResponse, captchaResponse) {
 			return insertError('server responded with error.');
 		}
 		finishRedirect();
-	}).catch(err => {
+	}).catch(() => {
 		insertError('failed to send challenge response.');
 	});
 }
@@ -74,7 +75,7 @@ const powFinished = new Promise((resolve, reject) => {
 		const eHashes = Math.pow(16, Math.floor(diff/8)) * ((diff%8)*2);
 		const diffString = '0'.repeat(Math.floor(diff/8));
 		const combined = pow;
-		const [userkey, challenge, signature] = combined.split("#");
+		const [userkey, challenge] = combined.split("#");
 		const start = Date.now();
 		if (window.Worker) {
 			const cpuThreads = window.navigator.hardwareConcurrency;
@@ -117,7 +118,7 @@ const powFinished = new Promise((resolve, reject) => {
 		} else {
 			console.warn('No webworker support, running in main/UI thread!');
 			let i = 0;
-			let start = Date.now();
+			const start = Date.now();
 			while(true) {
 				const hash = await argon2.hash({
 					pass: challenge + i.toString(),
