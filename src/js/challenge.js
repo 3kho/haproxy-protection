@@ -73,7 +73,10 @@ const powFinished = new Promise(resolve => {
 	const submitPow = (answer) => {
 		window.localStorage.setItem('basedflare-pow-response', answer);
 		stopPow();
-		resolve({ answer });
+		const dummyTime = 3000 - (Date.now()-start);
+		window.setTimeout(() => {
+			resolve({ answer });
+		}, dummyTime);
 	};
 
 	window.addEventListener('DOMContentLoaded', async () => {
