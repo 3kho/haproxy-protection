@@ -7,4 +7,4 @@ tls=%[ssl_fc]
 tlsv=%sslv
 sni=%[ssl_fc_sni]
 vey_id=%[env(RAY_ID)]
-bucket=%[env(BUCKET_DURATION)]
+expiry=%[env(CHALLENGE_EXPIRY)]

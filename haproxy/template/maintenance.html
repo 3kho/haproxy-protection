@@ -7,7 +7,7 @@
 :root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
 a,a:visited{color:var(--text-color)}
-body,html{height:100%}
+body,html{height:100%%}
 body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
 code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
 img,h3,p{margin:0 0 5px 0}
@@ -19,7 +19,8 @@ footer{font-size:x-small;margin-top:auto;margin-bottom:20px}.pt{padding-top:30vh
 		<footer>
 			<img src="/img/footerlogo.png">
 			<p>Security and Performance by <a href="https://BasedFlare.com">BasedFlare</a></p>
-			<p>Node: <code>20563af028ae90e0be85ab6c03f0e71b</code></p>
+			<p>Security and Performance by <a href="https://basedflare.com">BasedFlare</a></p>
+			<p>Node: <code>%[env(RAY_ID)]</code></p>
 		</footer>
 	</body>
 </html>
