@@ -10,6 +10,7 @@ NOTE: Use either HCAPTCHA_ or RECAPTHCA_, not both.
 - CAPTCHA_COOKIE_SECRET - random string, a salt for captcha cookies
 - POW_COOKIE_SECRET - different random string, a salt for pow cookies
 - HMAC_COOKIE_SECRET - different random string, a salt for pow cookies
+- TOR_CONTROL_PORT_PASSWORD - the control port password for tor daemon
 - RAY_ID - string to identify the HAProxy node by
 - CHALLENGE_EXPIRY - how long solution cookies last for, in seconds
 - CHALLENGE_INCLUDES_IP - any value, whether to lock solved challenges to IP or tor circuit
@@ -18,7 +19,6 @@ NOTE: Use either HCAPTCHA_ or RECAPTHCA_, not both.
 - ARGON_TIME - argon2 iterations
 - ARGON_KB - argon2 memory usage in KB
 - POW_DIFFICULTY - pow difficulty
-- TOR_CONTROL_PORT_PASSWORD - the control port password for tor daemon
 
 #### Run in docker (for testing/development)
 
@@ -36,9 +36,11 @@ Requires HAProxy compiled with lua support, and version >=2.5 for the native lua
 - Clone the repo somewhere. `/var/www/haproxy-protection` works.
 - Copy [haproxy.cfg](haproxy/haproxy.cfg) to `/etc/haproxy/haproxy.cfg`.
   - Please note this configuration is very minimal, and is simply an example configuration for haproxy-protection. You are expected to customise it significantly or otherwise copy the relevant parts into your own haproxy config.
-- Copy (preferably link) [scripts](src/scripts) to `/etc/haproxy/scripts`.
-- Copy (preferably link) [libs](src/libs) to `/etc/haproxy/libs`.
-- Copy the map files from haproxy folder to `/etc/haproxy`.
+- Copy/link [scripts](src/lua/scripts) to `/etc/haproxy/scripts`.
+- Copy/link [libs](src/lua/libs) to `/etc/haproxy/libs`.
+- Copy/link [template](haproxy/template) to `/etc/haproxy/template`.
+- Copy/link [js](src/js) to `/etc/haproxy/js`.
+- Copy [map](haproxy/map) to `/etc/haproxy/map`.
 - Install argon2, and the lua argon2 module with luarocks:
 ```bash
 sudo apt install -y git lua5.3 liblua5.3-dev argon2 libargon2-dev luarocks
