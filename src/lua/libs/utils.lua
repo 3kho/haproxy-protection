@@ -1,16 +1,12 @@
 local _M = {}
 
 local sha = require("sha")
-local secret_bucket_duration = tonumber(os.getenv("BUCKET_DURATION"))
+local bucket_duration = tonumber(os.getenv("BUCKET_DURATION"))
 local challenge_includes_ip = os.getenv("CHALLENGE_INCLUDES_IP")
 local tor_control_port_password = os.getenv("TOR_CONTROL_PORT_PASSWORD")
 
 -- generate the challenge hash/user hash
-function _M.generate_secret(context, salt, user_key, is_applet)
-
-	-- time bucket for expiry
-	local start_sec = core.now()['sec']
-	local bucket = start_sec - (start_sec % secret_bucket_duration)
+function _M.generate_challenge(context, salt, user_key, is_applet)
 
 	-- optional IP to lock challenges/user_keys to IP (for clearnet or single-onion aka 99% of cases)
 	local ip = ""
@@ -28,7 +24,11 @@ function _M.generate_secret(context, salt, user_key, is_applet)
 		user_agent = context.sf:req_fhdr('user-agent') or ""
 	end
 
-	return sha.sha3_256(salt .. bucket .. ip .. user_key .. user_agent)
+	local challenge_hash = sha.sha3_256(salt .. ip .. user_key .. user_agent)
+
+	local expiry = core.now()['sec'] + bucket_duration
+
+	return challenge_hash, expiry
 
 end
 
@@ -59,7 +59,7 @@ end
 function _M.send_tor_control_port(circuit_identifier)
 	local tcp = core.tcp();
 	tcp:settimeout(1);
-	tcp:connect("127.0.0.1", 9051);
+	tcp:connect("127.0.0.1", 9051); --TODO: configurable host/port
 	-- not buffered, so we are better off sending it all at once
 	tcp:send('AUTHENTICATE "' .. tor_control_port_password .. '"\nCLOSECIRCUIT ' .. circuit_identifier ..'\n')
 	tcp:close()

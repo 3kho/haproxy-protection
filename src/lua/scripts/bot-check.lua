@@ -116,9 +116,9 @@ function _M.view(applet)
 
 		-- get the user_key#challenge#sig
 		local user_key = sha.bin_to_hex(randbytes(16))
-		local challenge_hash = utils.generate_secret(applet, pow_cookie_secret, user_key, true)
-		local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. challenge_hash)
-		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. signature
+		local challenge_hash, expiry = utils.generate_challenge(applet, pow_cookie_secret, user_key, true)
+		local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. challenge_hash .. expiry)
+		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. expiry .. "#" .. signature
 
 		-- define body sections
 		local site_name_body = ""
@@ -144,8 +144,9 @@ function _M.view(applet)
 				captcha_sitekey, captcha_script_src)
 		else
 			pow_body = templates.pow_section
-			noscript_extra_body = string.format(templates.noscript_extra, user_key, challenge_hash, signature,
-				math.ceil(pow_difficulty/8), argon_time, argon_kb)
+			noscript_extra_body = string.format(templates.noscript_extra, user_key,
+				challenge_hash, expiry, signature, math.ceil(pow_difficulty/8), 
+				argon_time, argon_kb)
 		end
 
 		-- sub in the body sections
@@ -171,47 +172,57 @@ function _M.view(applet)
 
 		-- handle setting the POW cookie
 		local user_pow_response = parsed_body["pow_response"]
+		local matched_expiry = 0 -- ensure captcha cookie expiry matches POW cookie
 		if user_pow_response then
 
 			-- split the response up (makes the nojs submission easier because it can be a single field)
 			local split_response = utils.split(user_pow_response, "#")
 
-			if #split_response == 4 then
+			if #split_response == 5 then
 				local given_user_key = split_response[1]
 				local given_challenge_hash = split_response[2]
-				local given_signature = split_response[3]
-				local given_answer = split_response[4]
+				local given_expiry = split_response[3]
+				local given_signature = split_response[4]
+				local given_answer = split_response[5]
 
-				-- regenerate the challenge and compare it
-				local generated_challenge_hash = utils.generate_secret(applet, pow_cookie_secret, given_user_key, true)
-				if given_challenge_hash == generated_challenge_hash then
+				-- expiry check
+				local number_expiry = tonumber(given_expiry, 10)
+				if number_expiry ~= nil and number_expiry > core.now()['sec'] then
 
-					-- regenerate the signature and compare it
-					local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
-					if given_signature == generated_signature then
+					-- regenerate the challenge and compare it
+					local generated_challenge_hash = utils.generate_challenge(applet, pow_cookie_secret, given_user_key, true)
 
-						-- do the work with their given answer
-						local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
+					if given_challenge_hash == generated_challenge_hash then
 
-						-- check the output is correct
-						local hash_output = utils.split(full_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
-						local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
-						if utils.checkdiff(hex_hash_output, pow_difficulty) then
+						-- regenerate the signature and compare it
+						local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry)
 
-							-- the answer was good, give them a cookie
-							local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
-							local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_answer .. "#" .. signature
-							applet:add_header(
-								"set-cookie",
-								string.format(
-									"z_ddos_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
-									combined_cookie,
-									applet.headers['host'][0],
-									secure_cookie_flag
+						if given_signature == generated_signature then
+
+							-- do the work with their given answer
+							local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
+
+							-- check the output is correct
+							local hash_output = utils.split(full_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
+							local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
+
+							if utils.checkdiff(hex_hash_output, pow_difficulty) then
+
+								-- the answer was good, give them a cookie
+								local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry .. given_answer)
+								local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_expiry .. "#" .. given_answer .. "#" .. signature
+								applet:add_header(
+									"set-cookie",
+									string.format(
+										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
+										combined_cookie,
+										applet.headers['host'][0],
+										secure_cookie_flag
+									)
 								)
-							)
-							valid_submission = true
+								valid_submission = true
 
+							end
 						end
 					end
 				end
@@ -251,13 +262,13 @@ function _M.view(applet)
 			if api_response.success == true then
 
 				local user_key = sha.bin_to_hex(randbytes(16))
-				local user_hash = utils.generate_secret(applet, captcha_cookie_secret, user_key, true)
-				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash)
-				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. signature
+				local user_hash = utils.generate_challenge(applet, captcha_cookie_secret, user_key, true)
+				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash .. matched_expiry)
+				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. matched_expiry .. "#" .. signature
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"z_ddos_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
+						"_basedflare_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
 						combined_cookie,
 						applet.headers['host'][0],
 						secure_cookie_flag
@@ -309,22 +320,29 @@ end
 -- check if captcha cookie is valid, separate secret from POW
 function _M.check_captcha_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-	local received_captcha_cookie = parsed_request_cookies["z_ddos_captcha"] or ""
+	local received_captcha_cookie = parsed_request_cookies["_basedflare_captcha"] or ""
 	-- split the cookie up
 	local split_cookie = utils.split(received_captcha_cookie, "#")
-	if #split_cookie ~= 3 then
+	if #split_cookie ~= 4 then
 		return
 	end
 	local given_user_key = split_cookie[1]
 	local given_user_hash = split_cookie[2]
-	local given_signature = split_cookie[3]
+	local given_expiry = split_cookie[3]
+	local given_signature = split_cookie[4]
+
+	-- expiry check
+	local number_expiry = tonumber(given_expiry, 10)
+	if number_expiry == nil or number_expiry <= core.now()['sec'] then
+		return
+	end
 	-- regenerate the user hash and compare it
-	local generated_user_hash = utils.generate_secret(txn, captcha_cookie_secret, given_user_key, false)
+	local generated_user_hash = utils.generate_challenge(txn, captcha_cookie_secret, given_user_key, false)
 	if generated_user_hash ~= given_user_hash then
 		return
 	end
 	-- regenerate the signature and compare it
-	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_user_hash)
+	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_user_hash .. given_expiry)
 	if given_signature == generated_signature then
 		return txn:set_var("txn.captcha_passed", true)
 	end
@@ -333,23 +351,30 @@ end
 -- check if pow cookie is valid
 function _M.check_pow_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-	local received_pow_cookie = parsed_request_cookies["z_ddos_pow"] or ""
+	local received_pow_cookie = parsed_request_cookies["_basedflare_pow"] or ""
 	-- split the cookie up
 	local split_cookie = utils.split(received_pow_cookie, "#")
-	if #split_cookie ~= 4 then
+	if #split_cookie ~= 5 then
 		return
 	end
 	local given_user_key = split_cookie[1]
 	local given_challenge_hash = split_cookie[2]
-	local given_answer = split_cookie[3]
-	local given_signature = split_cookie[4]
+	local given_expiry = split_cookie[3]
+	local given_answer = split_cookie[4]
+	local given_signature = split_cookie[5]
+
+	-- expiry check
+	local number_expiry = tonumber(given_expiry, 10)
+	if number_expiry == nil or number_expiry <= core.now()['sec'] then
+		return
+	end
 	-- regenerate the challenge and compare it
-	local generated_challenge_hash = utils.generate_secret(txn, pow_cookie_secret, given_user_key, false)
+	local generated_challenge_hash = utils.generate_challenge(txn, pow_cookie_secret, given_user_key, false)
 	if given_challenge_hash ~= generated_challenge_hash then
 		return
 	end
 	-- regenerate the signature and compare it
-	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
+	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry .. given_answer)
 	if given_signature == generated_signature then
 		return txn:set_var("txn.pow_passed", true)
 	end
