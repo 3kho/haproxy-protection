@@ -43,7 +43,7 @@ _M.body = [[
 		</noscript>
 		<div class="powstatus"></div>
 		<footer>
-			<img src="/img/footerlogo.png" />
+			<img src="/.basedflare/img/footerlogo.png" />
 			<p>Security and Performance by <a href="https://basedflare.com">BasedFlare</a></p>
 			<p>Node: <code>%s</code></p>
 		</footer>
