@@ -10,17 +10,17 @@ services:
       dockerfile: haproxy/Dockerfile
     volumes:
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
-      - ./haproxy/ddos.map:/etc/haproxy/ddos.map
-      - ./haproxy/hosts.map:/etc/haproxy/hosts.map
-      - ./haproxy/backends.map:/etc/haproxy/backends.map
-      - ./haproxy/blocked.map:/etc/haproxy/blocked.map
-      - ./haproxy/whitelist.map:/etc/haproxy/whitelist.map
-      - ./haproxy/maintenance.map:/etc/haproxy/maintenance.map
-      - ./haproxy/trace.txt:/etc/haproxy/trace.txt
-      - ./src/scripts/:/etc/haproxy/scripts/
-      - ./src/libs/:/etc/haproxy/libs/
-      - ./haproxy/js/:/var/www/js/
-      - ./haproxy/html/maintenance.html:/var/www/html/maintenance.html
+      - ./haproxy/map/ddos.map:/etc/haproxy/ddos.map
+      - ./haproxy/map/hosts.map:/etc/haproxy/hosts.map
+      - ./haproxy/map/backends.map:/etc/haproxy/backends.map
+      - ./haproxy/map/blocked.map:/etc/haproxy/blocked.map
+      - ./haproxy/map/whitelist.map:/etc/haproxy/whitelist.map
+      - ./haproxy/map/maintenance.map:/etc/haproxy/maintenance.map
+      - ./haproxy/template/maintenance.html:/etc/haproxy/maintenance.html
+      - ./haproxy/template/trace.txt:/etc/haproxy/trace.txt
+      - ./src/lua/scripts/:/etc/haproxy/scripts/
+      - ./src/lua/libs/:/etc/haproxy/libs/
+      - ./src/js/:/etc/haproxy/js/
     environment:
       # These are the hcaptcha and recaptcha test keys, not leaking any dont worry :^)
       - HCAPTCHA_SITEKEY=20000000-ffff-ffff-ffff-000000000002
