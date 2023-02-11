@@ -38,7 +38,7 @@ local hmac_cookie_secret = os.getenv("HMAC_COOKIE_SECRET")
 local ray_id = os.getenv("RAY_ID")
 
 -- load captcha map and set hcaptcha/recaptch based off env vars
-local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
+local captcha_map = Map.new("/etc/haproxy/map/ddos.map", Map._str);
 local captcha_provider_domain = ""
 local captcha_classname = ""
 local captcha_script_src = ""
@@ -68,8 +68,8 @@ function _M.setup_servers()
 	if backend_name == nil or server_prefix == nil then
 		return;
 	end
-	local hosts_map = Map.new("/etc/haproxy/hosts.map", Map._str);
-	local handle = io.open("/etc/haproxy/hosts.map", "r")
+	local hosts_map = Map.new("/etc/haproxy/map/hosts.map", Map._str);
+	local handle = io.open("/etc/haproxy/map/hosts.map", "r")
 	local line = handle:read("*line")
 	local counter = 1
 	while line do
@@ -77,7 +77,7 @@ function _M.setup_servers()
 		local port_index = backend_host:match'^.*():'
 		local backend_hostname = backend_host:sub(0, port_index-1)
 		local backend_port = backend_host:sub(port_index + 1)
-		core.set_map("/etc/haproxy/backends.map", domain, server_prefix..counter)
+		core.set_map("/etc/haproxy/map/backends.map", domain, server_prefix..counter)
 		local proxy = core.proxies[backend_name].servers[server_prefix..counter]
 		proxy:set_addr(backend_hostname, backend_port)
 		proxy:set_ready()
@@ -214,7 +214,7 @@ function _M.view(applet)
 								applet:add_header(
 									"set-cookie",
 									string.format(
-										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
+										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
 										combined_cookie,
 										applet.headers['host'][0],
 										secure_cookie_flag
@@ -268,7 +268,7 @@ function _M.view(applet)
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"_basedflare_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
+						"_basedflare_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
 						combined_cookie,
 						applet.headers['host'][0],
 						secure_cookie_flag
