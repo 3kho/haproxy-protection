@@ -7,6 +7,8 @@ Integrates with https://gitgud.io/fatchan/haproxy-panel-next to add/remove/edit 
 #### Features / improvements in this fork:
 
 - Implement a proof-of-work mode, in addition to the existing captcha only mode.
+- Ability to choose between argon2 or sha256 proof of work modes.
+- Sharing POW answers with storage events to prevent unnecessary re-solving when opening multiple tabs.
 - Supports either hcaptcha or recaptcha.
 - Support .onion/tor with the HAProxy PROXY protocol, using circuit identifiers as a substitute for IPs.
 - Allow users without javascript to solve the POW by providing a shell script and html form inside `noscript` tags.
