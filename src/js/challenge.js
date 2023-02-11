@@ -113,7 +113,7 @@ const powFinished = new Promise(resolve => {
 			const isTor = location.hostname.endsWith('.onion');
 			/* Try to use all threads on tor, because tor limits threads for anti fingerprinting but this
 			   makes it awfully slow because workerThreads will always be = 1 */
-			const workerThreads = isTor ? cpuThreads : Math.max(Math.ceil(cpuThreads/2),cpuThreads-1);
+			const workerThreads = (isTor || cpuThreads === 2) ? cpuThreads : Math.max(Math.ceil(cpuThreads/2),cpuThreads-1);
 			const messageHandler = (e) => {
 				if (e.data.length === 1) {
 					const totalHashes = e.data[0]; //assumes all worker threads are same speed
