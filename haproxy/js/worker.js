@@ -1,4 +1,4 @@
-importScripts('/js/argon2.js');
+importScripts('/.basedflare/js/argon2.js');
 
 onmessage = async function(e) {
 	const [userkey, challenge, diff, diffString, argonOpts, id, threads] = e.data;

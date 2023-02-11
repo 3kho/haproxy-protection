@@ -107,7 +107,7 @@ const powFinished = new Promise((resolve, reject) => {
 			}
 			const workers = [];
 			for (let i = 0; i < workerThreads; i++) {
-				const argonWorker = new Worker('/js/worker.js');
+				const argonWorker = new Worker('/.basedflare/js/worker.js');
 				argonWorker.onmessage = messageHandler;
 				workers.push(argonWorker);
 			}
