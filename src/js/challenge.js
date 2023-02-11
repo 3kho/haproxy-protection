@@ -52,18 +52,47 @@ function postResponse(powResponse, captchaResponse) {
 		} else if (s >= 500) {
 			return insertError('server responded with error.');
 		}
+		window.localStorage.setItem('basedflare-redirect', Math.random());
 		finishRedirect();
 	}).catch(() => {
 		insertError('failed to send challenge response.');
 	});
 }
 
-const powFinished = new Promise((resolve, reject) => {
+const powFinished = new Promise(resolve => {
+
+	const start = Date.now();
+	const workers = [];
+	let finished = false;
+	const stopPow = () => {
+		finished = true;
+		const hasCaptcha = document.getElementById('captcha');
+		updateElem('.powstatus', `Found proof-of-work solution.${!hasCaptcha?' Submitting...':''}`);
+		workers.forEach(w => w.terminate());
+	};
+	const submitPow = (answer) => {
+		window.localStorage.setItem('basedflare-pow-response', answer);
+		stopPow();
+		resolve({ answer });
+	};
+
 	window.addEventListener('DOMContentLoaded', async () => {
+
+		const { time, kb, pow, diff } = document.querySelector('[data-pow]').dataset;
+		window.addEventListener('storage', event => {
+			if (event.key === 'basedflare-pow-response' && !finished) {
+				console.log('Got answer', event.newValue, 'from storage event');
+				stopPow();
+				resolve({ answer: event.newValue, localStorage: true });
+			} else if (event.key === 'basedflare-redirect') {
+				console.log('Redirecting, solved in another tab');
+				finishRedirect();
+			}
+		});
+
 		if (!wasmSupported) {
 			return insertError('browser does not support WebAssembly.');
 		}
-		const { time, kb, pow, diff } = document.querySelector('[data-pow]').dataset;
 		const argonOpts = {
 			time: time,
 			mem: kb,
@@ -74,16 +103,13 @@ const powFinished = new Promise((resolve, reject) => {
 		console.log('Got pow', pow, 'with difficulty', diff);
 		const eHashes = Math.pow(16, Math.floor(diff/8)) * ((diff%8)*2);
 		const diffString = '0'.repeat(Math.floor(diff/8));
-		const combined = pow;
-		const [userkey, challenge] = combined.split("#");
-		const start = Date.now();
+		const [userkey, challenge] = pow.split("#");
 		if (window.Worker) {
 			const cpuThreads = window.navigator.hardwareConcurrency;
 			const isTor = location.hostname.endsWith('.onion');
 			/* Try to use all threads on tor, because tor limits threads for anti fingerprinting but this
 			   makes it awfully slow because workerThreads will always be = 1 */
 			const workerThreads = isTor ? cpuThreads : Math.max(Math.ceil(cpuThreads/2),cpuThreads-1);
-			let finished = false;
 			const messageHandler = (e) => {
 				if (e.data.length === 1) {
 					const totalHashes = e.data[0]; //assumes all worker threads are same speed
@@ -94,28 +120,21 @@ const powFinished = new Promise((resolve, reject) => {
 					return updateElem('.powstatus', `Proof-of-work: ${hps}H/s, ~${remainingSec}s remaining`);
 				}
 				if (finished) { return; }
-				finished = true;
-				const hasCaptcha = document.getElementById('captcha');
-				updateElem('.powstatus', `Found proof-of-work solution.${!hasCaptcha?' Submitting...':''}`);
-				workers.forEach(w => w.terminate());
 				const [workerId, answer] = e.data;
 				console.log('Worker', workerId, 'returned answer', answer, 'in', Date.now()-start+'ms');
-				const dummyTime = 5000 - (Date.now()-start);
-				window.setTimeout(() => {
-					resolve(`${combined}#${answer}`);
-				}, dummyTime);
+				submitPow(`${pow}#${answer}`);
 			}
-			const workers = [];
 			for (let i = 0; i < workerThreads; i++) {
 				const argonWorker = new Worker('/.basedflare/js/worker.js');
 				argonWorker.onmessage = messageHandler;
 				workers.push(argonWorker);
 			}
 			for (let i = 0; i < workerThreads; i++) {
-				await new Promise(res => setTimeout(res, 100));
+				await new Promise(res => setTimeout(res, 10));
 				workers[i].postMessage([userkey, challenge, diff, diffString, argonOpts, i, workerThreads]);
 			}
 		} else {
+			//TODO: remove this section, it _will_ cause problems
 			console.warn('No webworker support, running in main/UI thread!');
 			let i = 0;
 			const start = Date.now();
@@ -133,25 +152,24 @@ const powFinished = new Promise((resolve, reject) => {
 				}
 				++i;
 			}
-			const dummyTime = 5000 - (Date.now()-start);
-			window.setTimeout(() => {
-				resolve(`${combined}#${i}`);
-			}, dummyTime);
+			submitPow(`${pow}#${i}`);
 		}
 	});
 }).then((powResponse) => {
 	const hasCaptchaForm = document.getElementById('captcha');
-	if (!hasCaptchaForm) {
-		postResponse(powResponse);
+	if (!hasCaptchaForm && !powResponse.localStorage) {
+		postResponse(powResponse.answer);
 	}
-	return powResponse;
+	return powResponse.answer;
+}).catch((e) => {
+	console.error(e);
 });
 
 function onCaptchaSubmit(captchaResponse) {
 	const captchaElem = document.querySelector('[data-sitekey]');
 	captchaElem.insertAdjacentHTML('afterend', `<div class="lds-ring"><div></div><div></div><div></div><div></div></div>`);
 	captchaElem.remove();
-	powFinished.then((powResponse) => {
+	powFinished.then(powResponse => {
 		postResponse(powResponse, captchaResponse);
 	});
 }
