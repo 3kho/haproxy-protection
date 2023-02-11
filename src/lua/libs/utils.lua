@@ -43,6 +43,9 @@ end
 
 -- return true if hash passes difficulty
 function _M.checkdiff(hash, diff)
+	if #hash == 0 then
+		return false
+	end
 	local i = 1
 	for j = 0, (diff-8), 8 do
 		if hash:sub(i, i) ~= "0" then

@@ -81,7 +81,7 @@ const powFinished = new Promise(resolve => {
 
 	window.addEventListener('DOMContentLoaded', async () => {
 
-		const { time, kb, pow, diff } = document.querySelector('[data-pow]').dataset;
+		const { time, kb, pow, diff, mode } = document.querySelector('[data-pow]').dataset;
 		window.addEventListener('storage', event => {
 			if (event.key === 'basedflare-pow-response' && !finished) {
 				console.log('Got answer', event.newValue, 'from storage event');
@@ -94,14 +94,15 @@ const powFinished = new Promise(resolve => {
 		});
 
 		if (!wasmSupported) {
-			return insertError('browser does not support WebAssembly.');
+			return insertError('Browser does not support WebAssembly.');
 		}
-		const argonOpts = {
+		const powOpts = {
 			time: time,
 			mem: kb,
 			hashLen: 32,
 			parallelism: 1,
-			type: argon2.ArgonType.Argon2id,
+			type: argon2 ? argon2.ArgonType.Argon2id : null,
+			mode: mode,
 		};
 		console.log('Got pow', pow, 'with difficulty', diff);
 		const eHashes = Math.pow(16, Math.floor(diff/8)) * ((diff%8)*2);
@@ -128,34 +129,16 @@ const powFinished = new Promise(resolve => {
 				submitPow(`${pow}#${answer}`);
 			}
 			for (let i = 0; i < workerThreads; i++) {
-				const argonWorker = new Worker('/.basedflare/js/worker.js');
-				argonWorker.onmessage = messageHandler;
-				workers.push(argonWorker);
+				const powWorker = new Worker('/.basedflare/js/worker.js');
+				powWorker.onmessage = messageHandler;
+				workers.push(powWorker);
 			}
 			for (let i = 0; i < workerThreads; i++) {
 				await new Promise(res => setTimeout(res, 10));
-				workers[i].postMessage([userkey, challenge, diff, diffString, argonOpts, i, workerThreads]);
+				workers[i].postMessage([userkey, challenge, diff, diffString, powOpts, i, workerThreads]);
 			}
 		} else {
-			//TODO: remove this section, it _will_ cause problems
-			console.warn('No webworker support, running in main/UI thread!');
-			let i = 0;
-			const start = Date.now();
-			while(true) {
-				const hash = await argon2.hash({
-					pass: challenge + i.toString(),
-					salt: userkey,
-					...argonOpts,
-				});
-				if (hash.hashHex.startsWith(diffString)
-					&& ((parseInt(hash.hashHex[diffString.length],16) &
-						0xff >> (((diffString.length+1)*8)-diff)) === 0)) {
-					console.log('Main thread found solution:', hash.hashHex, 'in', (Date.now()-start)+'ms');
-					break;
-				}
-				++i;
-			}
-			submitPow(`${pow}#${i}`);
+			return insertError('Browser does not support Web Workers.');
 		}
 	});
 }).then((powResponse) => {

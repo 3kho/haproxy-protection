@@ -19,6 +19,7 @@ NOTE: Use either HCAPTCHA_ or RECAPTHCA_, not both.
 - ARGON_TIME - argon2 iterations
 - ARGON_KB - argon2 memory usage in KB
 - POW_DIFFICULTY - pow difficulty
+- POW_TYPE - type of ahsh algorithm for pow "argon2" or "sha256"
 
 #### Run in docker (for testing/development)
 

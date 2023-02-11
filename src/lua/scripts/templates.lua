@@ -32,7 +32,7 @@ _M.body = [[
 		<script src="/.basedflare/js/argon2.js"></script>
 		<script src="/.basedflare/js/challenge.js"></script>
 	</head>
-	<body data-pow="%s" data-diff="%s" data-time="%s" data-kb="%s">
+	<body data-pow="%s" data-diff="%s" data-time="%s" data-kb="%s" data-mode="%s">
 		%s
 		%s
 		%s
@@ -50,7 +50,7 @@ _M.body = [[
 </html>
 ]]
 
-_M.noscript_extra = [[
+_M.noscript_extra_argon2 = [[
 			<details>
 				<summary>No JavaScript?</summary>
 				<ol>
@@ -58,6 +58,24 @@ _M.noscript_extra = [[
 						<p>Run this in a linux terminal (requires <code>argon2</code> package installed):</p>
 						<code style="word-break: break-all;">
 							echo "Q0g9IiQyIjtCPSQocHJpbnRmIDAlLjBzICQoc2VxIDEgJDUpKTtlY2hvICJXb3JraW5nLi4uIjtJPTA7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBhcmdvbjIgJDEgLWlkIC10ICQ2IC1rICQ3IC1wIDEgLWwgMzIgLXIpO0U9JHtIOjA6JDV9O1tbICRFID09ICRCIF1dICYmIGVjaG8gIk91dHB1dDoiICYmIGVjaG8gJDEjJDIjJDMjJDQjJEkgJiYgZXhpdCAwOygoSSsrKSk7ZG9uZTsK" | base64 -d | bash -s %s %s %s %s %s %s %s
+						</code>
+					<li>Paste the script output into the box and submit:
+					<form method="post">
+						<textarea name="pow_response" placeholder="script output" required></textarea>
+						<div><input type="submit" value="submit" /></div>
+					</form>
+				</ol>
+			</details>
+]]
+
+_M.noscript_extra_sha256 = [[
+			<details>
+				<summary>No JavaScript?</summary>
+				<ol>
+					<li>
+						<p>Run this in a linux terminal (requires <code>perl</code>):</p>
+						<code style="word-break: break-all;">
+							echo "dXNlIHN0cmljdDt1c2UgRGlnZXN0OjpTSEEgcXcoc2hhMjU2X2hleCk7cHJpbnQgIldvcmtpbmcuLi4iO215JGM9IiRBUkdWWzBdIi4iJEFSR1ZbMV0iO215JGlkPSRBUkdWWzRdKzA7bXkkZD0iMCJ4JGlkO215JGk9MDt3aGlsZSgxKXtsYXN0IGlmICRkIGVxIHN1YnN0ciBzaGEyNTZfaGV4KCRjLCRpKSwwLCRpZDskaSsrfXByaW50IlxuT3V0cHV0OlxuJEFSR1ZbMF0jJEFSR1ZbMV0jJEFSR1ZbMl0jJEFSR1ZbM10jJGlcbiI=" | base64 -d | perl -w - %s %s %s %s %s %s %s
 						</code>
 					<li>Paste the script output into the box and submit:
 					<form method="post">

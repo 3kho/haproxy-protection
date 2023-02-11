@@ -9,13 +9,12 @@ local url = require("url")
 local utils = require("utils")
 local cookie = require("cookie")
 local json = require("json")
-local sha = require("sha")
 local randbytes = require("randbytes")
 local templates = require("templates")
 
 -- POW
+local pow_type = os.getenv("POW_TYPE") or "argon2"
 local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
-
 -- argon2
 local argon2 = require("argon2")
 local argon_kb = tonumber(os.getenv("ARGON_KB") or 6000)
@@ -25,9 +24,8 @@ argon2.m_cost(argon_kb)
 argon2.parallelism(1)
 argon2.hash_len(32)
 argon2.variant(argon2.variants.argon2_id)
-
 -- sha2
--- TODO
+local sha = require("sha")
 
 -- environment variables
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
@@ -144,14 +142,20 @@ function _M.view(applet)
 				captcha_sitekey, captcha_script_src)
 		else
 			pow_body = templates.pow_section
-			noscript_extra_body = string.format(templates.noscript_extra, user_key,
+			local noscript_extra
+			if pow_type == "argon2" then
+				noscript_extra = templates.noscript_extra_argon2
+			else
+				noscript_extra = templates.noscript_extra_sha256
+			end
+			noscript_extra_body = string.format(noscript_extra, user_key,
 				challenge_hash, expiry, signature, math.ceil(pow_difficulty/8), 
 				argon_time, argon_kb)
 		end
 
 		-- sub in the body sections
 		response_body = string.format(templates.body, combined_challenge,
-			pow_difficulty, argon_time, argon_kb,
+			pow_difficulty, argon_time, argon_kb, pow_type,
 			site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 
@@ -200,11 +204,14 @@ function _M.view(applet)
 						if given_signature == generated_signature then
 
 							-- do the work with their given answer
-							local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
-
-							-- check the output is correct
-							local hash_output = utils.split(full_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
-							local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
+							local hex_hash_output = ""
+							if pow_type == "argon2" then
+								local encoded_argon_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
+								local trimmed_argon_hash = utils.split(encoded_argon_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
+								hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(trimmed_argon_hash));
+							else
+								hex_hash_output = sha.sha256(given_user_key .. given_challenge_hash .. given_answer)
+							end
 
 							if utils.checkdiff(hex_hash_output, pow_difficulty) then
 
