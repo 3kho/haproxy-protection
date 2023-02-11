@@ -13,16 +13,21 @@ local sha = require("sha")
 local randbytes = require("randbytes")
 local templates = require("templates")
 
--- argon2 POW
-local argon2 = require("argon2")
+-- POW
 local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
-local pow_kb = tonumber(os.getenv("POW_KB") or 6000)
-local pow_time = tonumber(os.getenv("POW_TIME") or 1)
-argon2.t_cost(pow_time)
-argon2.m_cost(pow_kb)
+
+-- argon2
+local argon2 = require("argon2")
+local argon_kb = tonumber(os.getenv("ARGON_KB") or 6000)
+local argon_time = tonumber(os.getenv("ARGON_TIME") or 1)
+argon2.t_cost(argon_time)
+argon2.m_cost(argon_kb)
 argon2.parallelism(1)
 argon2.hash_len(32)
 argon2.variant(argon2.variants.argon2_id)
+
+-- sha2
+-- TODO
 
 -- environment variables
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
@@ -140,12 +145,12 @@ function _M.view(applet)
 		else
 			pow_body = templates.pow_section
 			noscript_extra_body = string.format(templates.noscript_extra, user_key, challenge_hash, signature,
-				math.ceil(pow_difficulty/8), pow_time, pow_kb)
+				math.ceil(pow_difficulty/8), argon_time, argon_kb)
 		end
 
 		-- sub in the body sections
 		response_body = string.format(templates.body, combined_challenge,
-			pow_difficulty, pow_time, pow_kb,
+			pow_difficulty, argon_time, argon_kb,
 			site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 
