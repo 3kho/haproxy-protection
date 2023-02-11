@@ -29,8 +29,8 @@ services:
       - BACKEND_NAME=servers
       - SERVER_PREFIX=websrv
       - CHALLENGE_INCLUDES_IP=1
-      - POW_TIME=2
-      - POW_KB=512
+      - ARGON_TIME=2
+      - ARGON_KB=512
       - POW_DIFFICULTY=24
       - TOR_CONTROL_PORT_PASSWORD=changeme
 
