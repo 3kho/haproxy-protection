@@ -1,7 +1,7 @@
 local _M = {}
 
 local sha = require("sha")
-local bucket_duration = tonumber(os.getenv("BUCKET_DURATION"))
+local challenge_expiry = tonumber(os.getenv("CHALLENGE_EXPIRY"))
 local challenge_includes_ip = os.getenv("CHALLENGE_INCLUDES_IP")
 local tor_control_port_password = os.getenv("TOR_CONTROL_PORT_PASSWORD")
 
@@ -26,7 +26,7 @@ function _M.generate_challenge(context, salt, user_key, is_applet)
 
 	local challenge_hash = sha.sha3_256(salt .. ip .. user_key .. user_agent)
 
-	local expiry = core.now()['sec'] + bucket_duration
+	local expiry = core.now()['sec'] + challenge_expiry
 
 	return challenge_hash, expiry
 
