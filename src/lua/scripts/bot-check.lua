@@ -1,25 +1,33 @@
 _M = {}
 
-local url = require("url")
-local utils = require("utils")
-local cookie = require("cookie")
-local json = require("json")
-local sha = require("sha")
-local randbytes = require("randbytes")
-local argon2 = require("argon2")
-local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
-local pow_kb = tonumber(os.getenv("POW_KB") or 6000)
-local pow_time = tonumber(os.getenv("POW_TIME") or 1)
-argon2.t_cost(pow_time)
-argon2.m_cost(pow_kb)
-argon2.parallelism(1)
-argon2.hash_len(32)
-argon2.variant(argon2.variants.argon2_id)
-
 -- Testing only
 -- require("socket")
 -- require("print_r")
 
+-- main libs
+local url = require("url")
+local utils = require("utils")
+local cookie = require("cookie")
+local json = require("json")
+local randbytes = require("randbytes")
+local templates = require("templates")
+
+-- POW
+local pow_type = os.getenv("POW_TYPE") or "argon2"
+local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
+-- argon2
+local argon2 = require("argon2")
+local argon_kb = tonumber(os.getenv("ARGON_KB") or 6000)
+local argon_time = tonumber(os.getenv("ARGON_TIME") or 1)
+argon2.t_cost(argon_time)
+argon2.m_cost(argon_kb)
+argon2.parallelism(1)
+argon2.hash_len(32)
+argon2.variant(argon2.variants.argon2_id)
+-- sha2
+local sha = require("sha")
+
+-- environment variables
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
 local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY") or os.getenv("RECAPTCHA_SITEKEY")
 local captcha_cookie_secret = os.getenv("CAPTCHA_COOKIE_SECRET")
@@ -27,7 +35,8 @@ local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 local hmac_cookie_secret = os.getenv("HMAC_COOKIE_SECRET")
 local ray_id = os.getenv("RAY_ID")
 
-local captcha_map = Map.new("/etc/haproxy/ddos.map", Map._str);
+-- load captcha map and set hcaptcha/recaptch based off env vars
+local captcha_map = Map.new("/etc/haproxy/map/ddos.map", Map._str);
 local captcha_provider_domain = ""
 local captcha_classname = ""
 local captcha_script_src = ""
@@ -47,6 +56,7 @@ else
 	captcha_backend_name = "recaptcha"
 end
 
+-- setup initial server backends based on hosts.map into backends.map
 function _M.setup_servers()
 	if pow_difficulty < 8 then
 		error("POW_DIFFICULTY must be > 8. Around 16-32 is better")
@@ -56,8 +66,8 @@ function _M.setup_servers()
 	if backend_name == nil or server_prefix == nil then
 		return;
 	end
-	local hosts_map = Map.new("/etc/haproxy/hosts.map", Map._str);
-	local handle = io.open("/etc/haproxy/hosts.map", "r")
+	local hosts_map = Map.new("/etc/haproxy/map/hosts.map", Map._str);
+	local handle = io.open("/etc/haproxy/map/hosts.map", "r")
 	local line = handle:read("*line")
 	local counter = 1
 	while line do
@@ -65,7 +75,7 @@ function _M.setup_servers()
 		local port_index = backend_host:match'^.*():'
 		local backend_hostname = backend_host:sub(0, port_index-1)
 		local backend_port = backend_host:sub(port_index + 1)
-		core.set_map("/etc/haproxy/backends.map", domain, server_prefix..counter)
+		core.set_map("/etc/haproxy/map/backends.map", domain, server_prefix..counter)
 		local proxy = core.proxies[backend_name].servers[server_prefix..counter]
 		proxy:set_addr(backend_hostname, backend_port)
 		proxy:set_ready()
@@ -74,103 +84,6 @@ function _M.setup_servers()
 	end
 	handle:close()
 end
-
--- main page template
-local body_template = [[
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta name='viewport' content='width=device-width initial-scale=1'>
-		<title>Hold on...</title>
-		<style>
-			:root{--text-color:#c5c8c6;--bg-color:#1d1f21}
-			@media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
-			.h-captcha,.g-recaptcha{min-height:85px;display:block}
-			.red{color:red;font-weight:bold}
-			.powstatus{color:green;font-weight:bold}
-			a,a:visited{color:var(--text-color)}
-			body,html{height:100%%}
-			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:1200px;margin:0 auto;padding: 0 20px}
-			details{transition: border-left-color 0.5s;max-width:1200px;text-align:left;border-left: 2px solid var(--text-color);padding:10px}
-			code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
-			img,h3,p{margin:0 0 5px 0}
-			footer{font-size:x-small;margin-top:auto;margin-bottom:20px;text-align:center}
-			img{display:inline}
-			.pt{padding-top:15vh;display:flex;align-items:center;word-break:break-all}
-			.pt img{margin-right:10px}
-			details[open]{border-left-color: #1400ff}
-			.lds-ring{display:inline-block;position:relative;width:80px;height:80px}.lds-ring div{box-sizing:border-box;display:block;position:absolute;width:32px;height:32px;margin:10px;border:5px solid var(--text-color);border-radius:50%%;animation:lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:var(--text-color) transparent transparent transparent}.lds-ring div:nth-child(1){animation-delay:-0.45s}.lds-ring div:nth-child(2){animation-delay:-0.3s}.lds-ring div:nth-child(3){animation-delay:-0.15s}@keyframes lds-ring{0%%{transform:rotate(0deg)}100%%{transform:rotate(360deg)}}
-		</style>
-		<noscript>
-			<style>.jsonly{display:none}</style>
-		</noscript>
-		<script src="/js/argon2.js"></script>
-		<script src="/js/challenge.js"></script>
-	</head>
-	<body data-pow="%s" data-diff="%s" data-time="%s" data-kb="%s">
-		%s
-		%s
-		%s
-		<noscript>
-			<br>
-			<p class="red">JavaScript is required on this page.</p>
-			%s
-		</noscript>
-		<div class="powstatus"></div>
-		<footer>
-			<p>Security and Performance by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
-			<p>Node: <code>%s</code></p>
-		</footer>
-	</body>
-</html>
-]]
-
-local noscript_extra_template = [[
-			<details>
-				<summary>No JavaScript?</summary>
-				<ol>
-					<li>
-						<p>Run this in a linux terminal (requires <code>argon2</code> package installed):</p>
-						<code style="word-break: break-all;">
-							echo "Q0g9IiQyIjtCPSQocHJpbnRmICcwJS4wcycgJChzZXEgMSAkNCkpO2VjaG8gIldvcmtpbmcuLi4iO0k9MDt3aGlsZSB0cnVlOyBkbyBIPSQoZWNobyAtbiAkQ0gkSSB8IGFyZ29uMiAkMSAtaWQgLXQgJDUgLWsgJDYgLXAgMSAtbCAzMiAtcik7RT0ke0g6MDokNH07W1sgJEUgPT0gJEIgXV0gJiYgZWNobyAiT3V0cHV0OiIgJiYgZWNobyAkMSMkMiMkMyMkSSAmJiBleGl0IDA7KChJKyspKTtkb25lOwo=" | base64 -d | bash -s %s %s %s %s %s %s
-						</code>
-					<li>Paste the script output into the box and submit:
-					<form method="post">
-						<textarea name="pow_response" placeholder="script output" required></textarea>
-						<div><input type="submit" value="submit" /></div>
-					</form>
-				</ol>
-			</details>
-]]
-
--- title with favicon and hostname
-local site_name_section_template = [[
-		<h3 class="pt">
-			<img src="/favicon.ico" width="32" height="32" alt="icon">
-			%s
-		</h3>
-]]
-
--- spinner animation for proof of work
-local pow_section_template = [[
-		<h3>
-			Checking your browser for robots 🤖
-		</h3>
-		<div class="jsonly">
-			<div class="lds-ring"><div></div><div></div><div></div><div></div></div>
-		</div>
-]]
-
--- message, captcha form and submit button
-local captcha_section_template = [[
-		<h3>
-			Please solve the captcha to continue.
-		</h3>
-		<div id="captcha" class="jsonly">
-			<div class="%s" data-sitekey="%s" data-callback="onCaptchaSubmit"></div>
-			<script src="%s" async defer></script>
-		</div>
-]]
 
 -- kill a tor circuit
 function _M.kill_tor_circuit(txn)
@@ -201,9 +114,9 @@ function _M.view(applet)
 
 		-- get the user_key#challenge#sig
 		local user_key = sha.bin_to_hex(randbytes(16))
-		local challenge_hash = utils.generate_secret(applet, pow_cookie_secret, user_key, true)
-		local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. challenge_hash)
-		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. signature
+		local challenge_hash, expiry = utils.generate_challenge(applet, pow_cookie_secret, user_key, true)
+		local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. challenge_hash .. expiry)
+		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. expiry .. "#" .. signature
 
 		-- define body sections
 		local site_name_body = ""
@@ -214,7 +127,7 @@ function _M.view(applet)
 		-- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
 		local captcha_enabled = false
 		local host = applet.headers['host'][0]
-		local path = applet.qs; --because on /bot-check?/whatever, .qs (query string) holds the "path"
+		local path = applet.qs; --because on /.basedflare/bot-check?/whatever, .qs (query string) holds the "path"
 
 		local captcha_map_lookup = captcha_map:lookup(host..path) or captcha_map:lookup(host) or 0
 		captcha_map_lookup = tonumber(captcha_map_lookup)
@@ -223,19 +136,26 @@ function _M.view(applet)
 		end
 
 		-- pow at least is always enabled when reaching bot-check page
-		site_name_body = string.format(site_name_section_template, host)
+		site_name_body = string.format(templates.site_name_section, host)
 		if captcha_enabled then
-			captcha_body = string.format(captcha_section_template, captcha_classname,
+			captcha_body = string.format(templates.captcha_section, captcha_classname,
 				captcha_sitekey, captcha_script_src)
 		else
-			pow_body = pow_section_template
-			noscript_extra_body = string.format(noscript_extra_template, user_key, challenge_hash, signature,
-				math.ceil(pow_difficulty/8), pow_time, pow_kb)
+			pow_body = templates.pow_section
+			local noscript_extra
+			if pow_type == "argon2" then
+				noscript_extra = templates.noscript_extra_argon2
+			else
+				noscript_extra = templates.noscript_extra_sha256
+			end
+			noscript_extra_body = string.format(noscript_extra, user_key,
+				challenge_hash, expiry, signature, math.ceil(pow_difficulty/8), 
+				argon_time, argon_kb)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(body_template, combined_challenge,
-			pow_difficulty, pow_time, pow_kb,
+		response_body = string.format(templates.body, combined_challenge,
+			pow_difficulty, argon_time, argon_kb, pow_type,
 			site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
 		response_status_code = 403
 
@@ -256,47 +176,60 @@ function _M.view(applet)
 
 		-- handle setting the POW cookie
 		local user_pow_response = parsed_body["pow_response"]
+		local matched_expiry = 0 -- ensure captcha cookie expiry matches POW cookie
 		if user_pow_response then
 
 			-- split the response up (makes the nojs submission easier because it can be a single field)
 			local split_response = utils.split(user_pow_response, "#")
 
-			if #split_response == 4 then
+			if #split_response == 5 then
 				local given_user_key = split_response[1]
 				local given_challenge_hash = split_response[2]
-				local given_signature = split_response[3]
-				local given_answer = split_response[4]
+				local given_expiry = split_response[3]
+				local given_signature = split_response[4]
+				local given_answer = split_response[5]
 
-				-- regenerate the challenge and compare it
-				local generated_challenge_hash = utils.generate_secret(applet, pow_cookie_secret, given_user_key, true)
-				if given_challenge_hash == generated_challenge_hash then
+				-- expiry check
+				local number_expiry = tonumber(given_expiry, 10)
+				if number_expiry ~= nil and number_expiry > core.now()['sec'] then
 
-					-- regenerate the signature and compare it
-					local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash)
-					if given_signature == generated_signature then
+					-- regenerate the challenge and compare it
+					local generated_challenge_hash = utils.generate_challenge(applet, pow_cookie_secret, given_user_key, true)
 
-						-- do the work with their given answer
-						local full_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
+					if given_challenge_hash == generated_challenge_hash then
 
-						-- check the output is correct
-						local hash_output = utils.split(full_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
-						local hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(hash_output));
-						if utils.checkdiff(hex_hash_output, pow_difficulty) then
+						-- regenerate the signature and compare it
+						local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry)
 
-							-- the answer was good, give them a cookie
-							local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
-							local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_answer .. "#" .. signature
-							applet:add_header(
-								"set-cookie",
-								string.format(
-									"z_ddos_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
-									combined_cookie,
-									applet.headers['host'][0],
-									secure_cookie_flag
+						if given_signature == generated_signature then
+
+							-- do the work with their given answer
+							local hex_hash_output = ""
+							if pow_type == "argon2" then
+								local encoded_argon_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
+								local trimmed_argon_hash = utils.split(encoded_argon_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
+								hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(trimmed_argon_hash));
+							else
+								hex_hash_output = sha.sha256(given_user_key .. given_challenge_hash .. given_answer)
+							end
+
+							if utils.checkdiff(hex_hash_output, pow_difficulty) then
+
+								-- the answer was good, give them a cookie
+								local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry .. given_answer)
+								local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_expiry .. "#" .. given_answer .. "#" .. signature
+								applet:add_header(
+									"set-cookie",
+									string.format(
+										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
+										combined_cookie,
+										applet.headers['host'][0],
+										secure_cookie_flag
+									)
 								)
-							)
-							valid_submission = true
+								valid_submission = true
 
+							end
 						end
 					end
 				end
@@ -336,13 +269,13 @@ function _M.view(applet)
 			if api_response.success == true then
 
 				local user_key = sha.bin_to_hex(randbytes(16))
-				local user_hash = utils.generate_secret(applet, captcha_cookie_secret, user_key, true)
-				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash)
-				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. signature
+				local user_hash = utils.generate_challenge(applet, captcha_cookie_secret, user_key, true)
+				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash .. matched_expiry)
+				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. matched_expiry .. "#" .. signature
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"z_ddos_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict;%s",
+						"_basedflare_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
 						combined_cookie,
 						applet.headers['host'][0],
 						secure_cookie_flag
@@ -394,22 +327,29 @@ end
 -- check if captcha cookie is valid, separate secret from POW
 function _M.check_captcha_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-	local received_captcha_cookie = parsed_request_cookies["z_ddos_captcha"] or ""
+	local received_captcha_cookie = parsed_request_cookies["_basedflare_captcha"] or ""
 	-- split the cookie up
 	local split_cookie = utils.split(received_captcha_cookie, "#")
-	if #split_cookie ~= 3 then
+	if #split_cookie ~= 4 then
 		return
 	end
 	local given_user_key = split_cookie[1]
 	local given_user_hash = split_cookie[2]
-	local given_signature = split_cookie[3]
+	local given_expiry = split_cookie[3]
+	local given_signature = split_cookie[4]
+
+	-- expiry check
+	local number_expiry = tonumber(given_expiry, 10)
+	if number_expiry == nil or number_expiry <= core.now()['sec'] then
+		return
+	end
 	-- regenerate the user hash and compare it
-	local generated_user_hash = utils.generate_secret(txn, captcha_cookie_secret, given_user_key, false)
+	local generated_user_hash = utils.generate_challenge(txn, captcha_cookie_secret, given_user_key, false)
 	if generated_user_hash ~= given_user_hash then
 		return
 	end
 	-- regenerate the signature and compare it
-	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_user_hash)
+	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_user_hash .. given_expiry)
 	if given_signature == generated_signature then
 		return txn:set_var("txn.captcha_passed", true)
 	end
@@ -418,23 +358,30 @@ end
 -- check if pow cookie is valid
 function _M.check_pow_status(txn)
 	local parsed_request_cookies = cookie.get_cookie_table(txn.sf:hdr("Cookie"))
-	local received_pow_cookie = parsed_request_cookies["z_ddos_pow"] or ""
+	local received_pow_cookie = parsed_request_cookies["_basedflare_pow"] or ""
 	-- split the cookie up
 	local split_cookie = utils.split(received_pow_cookie, "#")
-	if #split_cookie ~= 4 then
+	if #split_cookie ~= 5 then
 		return
 	end
 	local given_user_key = split_cookie[1]
 	local given_challenge_hash = split_cookie[2]
-	local given_answer = split_cookie[3]
-	local given_signature = split_cookie[4]
+	local given_expiry = split_cookie[3]
+	local given_answer = split_cookie[4]
+	local given_signature = split_cookie[5]
+
+	-- expiry check
+	local number_expiry = tonumber(given_expiry, 10)
+	if number_expiry == nil or number_expiry <= core.now()['sec'] then
+		return
+	end
 	-- regenerate the challenge and compare it
-	local generated_challenge_hash = utils.generate_secret(txn, pow_cookie_secret, given_user_key, false)
+	local generated_challenge_hash = utils.generate_challenge(txn, pow_cookie_secret, given_user_key, false)
 	if given_challenge_hash ~= generated_challenge_hash then
 		return
 	end
 	-- regenerate the signature and compare it
-	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_answer)
+	local generated_signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry .. given_answer)
 	if given_signature == generated_signature then
 		return txn:set_var("txn.pow_passed", true)
 	end
