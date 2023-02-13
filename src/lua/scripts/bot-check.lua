@@ -228,6 +228,7 @@ function _M.view(applet)
 									)
 								)
 								valid_submission = true
+								matched_expiry = number_expiry
 
 							end
 						end
@@ -238,18 +239,24 @@ function _M.view(applet)
 
 		-- handle setting the captcha cookie
 		local user_captcha_response = parsed_body["h-captcha-response"] or parsed_body["g-recaptcha-response"]
+
 		if valid_submission and user_captcha_response then -- only check captcha if POW is already correct
+
 			-- format the url for verifying the captcha response
 			local captcha_url = string.format(
 				"https://%s%s",
-				core.backends[captcha_backend_name].servers[captcha_backend_name]:get_addr(),
+				--Seems this is no longer needed, captcha_provider_domain works since 2.7
+				--core.backends[captcha_backend_name].servers[captcha_backend_name]:get_addr(),
+				captcha_provider_domain,
 				captcha_siteverify_path
 			)
+
 			-- construct the captcha body to send to the captcha url
 			local captcha_body = url.buildQuery({
 				secret=captcha_secret,
 				response=user_captcha_response
 			})
+
 			-- instantiate an http client and make the request
 			local httpclient = core.httpclient()
 			local res = httpclient:post{
@@ -257,17 +264,19 @@ function _M.view(applet)
 				body=captcha_body,
 				headers={
 					[ "host" ] = { captcha_provider_domain },
-					[ "content-type" ] = { "application/x-www-form-urlencoded" }
+					[ "content-type" ] = { "application/x-www-form-urlencoded" },
+					[ "user-agent" ] = { "haproxy-protection (haproxy-protection/0.1; +https://gitgud.io/fatchan/haproxy-protection)" }
 				}
 			}
+
 			-- try parsing the response as json
 			local status, api_response = pcall(json.decode, res.body)
 			if not status then
 				api_response = {}
 			end
+
 			-- the response was good i.e the captcha provider says they passed, give them a cookie
 			if api_response.success == true then
-
 				local user_key = sha.bin_to_hex(randbytes(16))
 				local user_hash = utils.generate_challenge(applet, captcha_cookie_secret, user_key, true)
 				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash .. matched_expiry)
@@ -282,8 +291,8 @@ function _M.view(applet)
 					)
 				)
 				valid_submission = valid_submission and true
-
 			end
+
 		end
 
 		if not valid_submission then
