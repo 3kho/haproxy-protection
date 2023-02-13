@@ -8,17 +8,18 @@
 @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
 a,a:visited{color:var(--text-color)}
 body,html{height:100%%}
-body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;text-align:center;margin:0}
-code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
-img,h3,p{margin:0 0 5px 0}
-footer{font-size:x-small;margin-top:auto;margin-bottom:20px}.pt{padding-top:30vh}
+body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:60em;margin:0 auto;padding: 0 20px}
+code{background-color:#dfdfdf30;border-radius:4px;padding:0 3px;color:#ff6590}
+.pt{padding-top:30vh;display:flex;align-items:center;word-break:break-all;justify-content: center;}
+img,h3{margin:0 0 5px 0}
+footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-top:1px solid #80808040;padding:10px}
 		</style>
 	</head>
 	<body>
 		<h3 class="pt">Under maintenance. Please try again soon!</h3>
 		<footer>
-			<p>Security and Performance by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
 			<p>Node: <code>%[env(RAY_ID)]</code></p>
+			<p>Performance & security by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
 		</footer>
 	</body>
 </html>
