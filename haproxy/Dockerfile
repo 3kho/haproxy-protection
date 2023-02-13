@@ -17,7 +17,8 @@ RUN set -eux; \
 		--uid 99 \
 		haproxy
 
-ENV HAPROXY_URL http://www.haproxy.org/download/2.6/src/snapshot/haproxy-ss-LATEST.tar.gz
+ENV HAPROXY_URL http://www.haproxy.org/download/2.7/src/snapshot/haproxy-ss-LATEST.tar.gz
+ENV DATAPLANEAPI_URL https://github.com/haproxytech/dataplaneapi/releases/download/v2.7.2/dataplaneapi_2.7.2_Linux_x86_64.tar.gz
 
 # see https://sources.debian.net/src/haproxy/jessie/debian/rules/ for some helpful navigation of the possible "make" arguments
 RUN set -eux; \
@@ -36,6 +37,11 @@ RUN set -eux; \
 		luarocks \
 	; \
 	rm -rf /var/lib/apt/lists/*; \
+	\
+	wget -O dataplaneapi_Linux_x86_64.tar.gz "$DATAPLANEAPI_URL"; \
+	tar -zxvf dataplaneapi_Linux_x86_64.tar.gz; \
+	chmod +x build/dataplaneapi; \
+	cp build/dataplaneapi /usr/local/bin/; \
 	\
 	wget -O haproxy.tar.gz "$HAPROXY_URL"; \
 #	echo "$HAPROXY_SHA256 *haproxy.tar.gz" | sha256sum -c; \

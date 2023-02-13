@@ -4,10 +4,11 @@ function updateElem(selector, text) {
 }
 
 function insertError(str) {
-	const ring = document.querySelector('.lds-ring');
+	const loader = document.querySelector('#loader');
 	const captcha = document.querySelector('#captcha');
-	(ring || captcha).insertAdjacentHTML('afterend', `<p class="red">Error: ${str}</p>`);
-	ring && ring.remove();
+	console.log(loader, captcha);
+	(captcha || loader).insertAdjacentHTML('afterend', `<p class="red">Error: ${str}</p>`);
+	loader && loader.remove();
 	captcha && captcha.remove();
 	updateElem('.powstatus', '');
 }
@@ -153,7 +154,8 @@ const powFinished = new Promise(resolve => {
 
 function onCaptchaSubmit(captchaResponse) {
 	const captchaElem = document.querySelector('[data-sitekey]');
-	captchaElem.insertAdjacentHTML('afterend', `<div class="lds-ring"><div></div><div></div><div></div><div></div></div>`);
+	// captchaElem.insertAdjacentHTML('afterend', `<div id="loader" class="loader"><div></div><div></div><div></div><div></div></div>`);
+	captchaElem.insertAdjacentHTML('afterend', `<div id="loader"><div class="b"></div><div class="b"></div><div class="b"></div></div>`);
 	captchaElem.remove();
 	powFinished.then(powResponse => {
 		postResponse(powResponse, captchaResponse);
