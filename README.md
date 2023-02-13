@@ -28,8 +28,8 @@ See [INSTALLATION.md](INSTALLATION.md)
 
 #### Screenshots
 
-![nocaptcha](img/nocaptcha.png "no captcha mode")
-![captcha](img/captcha.png "captcha mode (pow done asynchronously in background)")
+![nocaptcha](img/nocaptcha.gif "no captcha mode")
+![captcha](img/captcha.gif "captcha mode (pow done asynchronously in background)")
 
 ## For generous people
 
