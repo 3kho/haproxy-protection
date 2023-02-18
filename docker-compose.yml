@@ -5,8 +5,7 @@ services:
     network_mode: host
     ports:
       - 80:80
-      # - 2000:2000 #runtime api
-      # - 2001:2001 #dataplaneapi
+      - 2001:2001 #dataplaneapi
     build:
       context: ./
       dockerfile: haproxy/Dockerfile

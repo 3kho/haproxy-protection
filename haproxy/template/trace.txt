@@ -5,6 +5,7 @@ uag=%[req.fhdr(user-agent)]
 http=%HV
 tls=%[ssl_fc]
 tlsv=%sslv
+tlsf=%[ssl_c_sha1,hex]
 sni=%[ssl_fc_sni]
 vey_id=%[env(RAY_ID)]
 expiry=%[env(CHALLENGE_EXPIRY)]
