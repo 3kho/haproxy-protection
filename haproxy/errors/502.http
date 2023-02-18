@@ -1,8 +1,3 @@
-HTTP/1.0 502 Bad Gateway
-Cache-Control: no-cache
-Connection: close
-Content-Type: text/html
-
 <!DOCTYPE HTML>
 <html>
 	<head>
@@ -12,19 +7,19 @@ Content-Type: text/html
 :root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
 a,a:visited{color:var(--text-color)}
-body,html{height:100%}
-body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Arial,Helvetica,sans-serif;text-align:center;margin:0}
-code{background-color:#dfdfdf30;border-radius:3px;padding:0 3px;}
-img,h3,p{margin:0 0 5px 0}
-footer{font-size:x-small;margin-top:auto;margin-bottom:20px}.pt{padding-top:30vh}
+body,html{height:100%%}
+body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:60em;margin:0 auto;padding: 0 20px}
+code{background-color:#dfdfdf30;border-radius:4px;padding:0 3px;color:#ff6590}
+.pt{padding-top:30vh;display:flex;align-items:center;word-break:break-all;justify-content: center;}
+img,h3{margin:0 0 5px 0}
+footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-top:1px solid #80808040;padding:10px}
 		</style>
 	</head>
 	<body>
 		<h3 class="pt">Bad Gateway.</h3>
 		<footer>
-			<img src="/.basedflare/img/footerlogo.png">
-			<p>Security and Performance by <a href="https://BasedFlare.com">BasedFlare</a></p>
-			<p>Node: <code>20563af028ae90e0be85ab6c03f0e71b</code></p>
+			<p>Node: <code>%[env(RAY_ID)]</code></p>
+			<p>Performance & security by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
 		</footer>
 	</body>
 </html>
