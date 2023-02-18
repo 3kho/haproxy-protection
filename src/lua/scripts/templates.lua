@@ -13,7 +13,7 @@ _M.body = [[
 			.h-captcha,.g-recaptcha{min-height:85px;display:block}
 			.red{color:red;font-weight:bold}
 			.left{text-align:left}
-			.powstatus{color:green;font-weight:bold}
+			.powstatus{color:green;font-size:small;}
 			a,a:visited{color:var(--text-color)}
 			body,html{height:100%%;text-align:center;}
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:60em;margin:0 auto;padding: 0 20px}
