@@ -29,7 +29,7 @@ function setup_servers()
 		-- proxy:set_addr(backend_hostname, backend_port)
 		-- proxy:set_ready()
 		local server_name = "servers/websrv"..counter
-		tcp:send(string.format("add server %s %s check\n", server_name, backend_host))
+		tcp:send(string.format("add server %s %s check ssl verify none\n", server_name, backend_host))
 		tcp:send(string.format("enable server %s\n", server_name))
 		line = handle:read("*line")
 		counter = counter + 1
