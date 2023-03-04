@@ -18,6 +18,7 @@ Integrates with https://gitgud.io/fatchan/haproxy-panel-next to add/remove/edit 
 - Improved the appearance of the challenge page.
 - Add several useful maps & acls to the haproxy config:
   - Whitelist or blacklist IPs/subnets.
+  - Simple redirect/rewrite map for domains.
   - Maintenance mode page for selected domains.
 - Fix multiple security issues.
 - Many bugfixes.
