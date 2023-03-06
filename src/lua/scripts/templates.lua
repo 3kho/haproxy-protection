@@ -9,7 +9,7 @@ _M.body = [[
 		<title>Hold on...</title>
 		<style>
 			:root{--text-color:#c5c8c6;--bg-color:#1d1f21}
-			@media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#EEE}}
+			@media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#fff}}
 			.h-captcha,.g-recaptcha{min-height:85px;display:block}
 			.red{color:red;font-weight:bold}
 			.left{text-align:left}
@@ -19,7 +19,7 @@ _M.body = [[
 			body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:60em;margin:0 auto;padding: 0 20px}
 			details{transition: border-left-color 0.5s;max-width:1200px;text-align:left;border-left: 2px solid var(--text-color);padding:10px}
 			code{background-color:#dfdfdf30;border-radius:4px;padding:0 3px;color:#ff6590}
-			img,h3{margin:0 0 5px 0}
+			img,h3{margin:0 0 5px 0;font-weight:normal}
 			li{margin-bottom: 1em}
 			footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-top:1px solid #80808040;padding:10px}
 			img{display:inline}
@@ -96,7 +96,7 @@ _M.noscript_extra_sha256 = [[
 -- title with favicon and hostname
 _M.site_name_section = [[
 		<h3 class="pt">
-			<img src="/favicon.ico" width="32" height="32" alt=" ">
+			<!-- img src="/favicon.ico" width="32" height="32" alt=" "> -->
 			%s
 		</h3>
 ]]
