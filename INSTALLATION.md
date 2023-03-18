@@ -20,6 +20,7 @@ NOTE: Use either HCAPTCHA_ or RECAPTHCA_, not both.
 - ARGON_KB - argon2 memory usage in KB
 - POW_DIFFICULTY - pow difficulty
 - POW_TYPE - type of ahsh algorithm for pow "argon2" or "sha256"
+- VERIFY_BACKEND_SSL - whether to verify backend ssl, requires you have a private CA on the proxy and using it to sign your backend certs
 
 #### Run in docker (for testing/development)
 
