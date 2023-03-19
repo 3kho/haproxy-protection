@@ -1,6 +1,11 @@
-function updateElem(selector, text) {
-	document.querySelector(selector)
-		.innerText = text;
+function updateElem(selector, text, color) {
+	const updateElem = document.querySelector(selector);
+	if (updateElem) {
+		updateElem.innerText = text;
+		if (color) {
+			updateElem.style.color = color;
+		}
+	}
 }
 
 function insertError(str) {
@@ -15,6 +20,13 @@ function insertError(str) {
 
 function finishRedirect() {
 	window.location=location.search.slice(1)+location.hash || "/";
+}
+
+function makeLoaderGreen() {
+	const dots = document.querySelectorAll('.b');
+	if (dots && dots.length > 0) {
+		dots.forEach(dot => dot.classList.add('green'));
+	}
 }
 
 const wasmSupported = (() => {
@@ -49,14 +61,14 @@ function postResponse(powResponse, captchaResponse) {
 	}).then(res => {
 		const s = res.status;
 		if (s >= 400 && s < 500) {
-			return insertError('bad challenge response request.');
+			return insertError('Server rejected your submission.');
 		} else if (s >= 500) {
-			return insertError('server responded with error.');
+			return insertError('Server encountered an error.');
 		}
 		window.localStorage.setItem('basedflare-redirect', Math.random());
 		finishRedirect();
 	}).catch(() => {
-		insertError('failed to send challenge response.');
+		insertError('Failed to send request to server.');
 	});
 }
 
@@ -68,7 +80,12 @@ const powFinished = new Promise(resolve => {
 	const stopPow = () => {
 		finished = true;
 		const hasCaptcha = document.getElementById('captcha');
-		updateElem('.powstatus', `Found proof-of-work solution.${!hasCaptcha?' Submitting...':''}`);
+		if (hasCaptcha) {
+			updateElem('.powstatus', 'Proof-of-work completed.', '#31cc31');
+		} else {
+			updateElem('.powstatus', 'Proof-of-work completed. Submitting...', '#31cc31');
+			makeLoaderGreen();
+		}
 		workers.forEach(w => w.terminate());
 	};
 	const submitPow = (answer) => {
@@ -106,7 +123,7 @@ const powFinished = new Promise(resolve => {
 			mode: mode,
 		};
 		console.log('Got pow', pow, 'with difficulty', diff);
-		const eHashes = Math.pow(16, Math.floor(diff/8)) * ((diff%8)*2);
+		const eHashes = Math.pow(16, Math.floor(diff/8)) * (((diff%8)*2)||1);
 		const diffString = '0'.repeat(Math.floor(diff/8));
 		const [userkey, challenge] = pow.split("#");
 		if (window.Worker) {
@@ -122,7 +139,8 @@ const powFinished = new Promise(resolve => {
 					const hps = Math.floor(totalHashes/elapsedSec);
 					const requiredSec = Math.floor(eHashes/hps) * 1.5; //estimate 1.5x time
 					const remainingSec = Math.max(0, Math.floor(requiredSec-elapsedSec)); //dont show negative time
-					return updateElem('.powstatus', `Proof-of-work: ${hps}H/s, ~${remainingSec}s remaining`);
+					console.log(`Proof-of-work: ${hps}H/s, ≈${remainingSec}s remaining`);
+					return updateElem('.powstatus', `Working... ≈${remainingSec}s remaining`);
 				}
 				if (finished) { return; }
 				const [workerId, answer] = e.data;
@@ -158,6 +176,8 @@ function onCaptchaSubmit(captchaResponse) {
 	captchaElem.insertAdjacentHTML('afterend', `<div id="loader"><div class="b"></div><div class="b"></div><div class="b"></div></div>`);
 	captchaElem.remove();
 	powFinished.then(powResponse => {
+		updateElem('.powstatus', 'Submitting...', '#31cc31');
+		makeLoaderGreen();
 		postResponse(powResponse, captchaResponse);
 	});
 }
