@@ -27,10 +27,11 @@ Integrates with https://gitgud.io/fatchan/haproxy-panel-next to add/remove/edit 
 
 See [INSTALLATION.md](INSTALLATION.md)
 
-#### Screenshots
+#### Demos
 
-![nocaptcha](img/nocaptcha.gif "no captcha mode")
-![captcha](img/captcha.gif "captcha mode (pow done asynchronously in background)")
+[Proof-of-work](https://basedflare.com/)
+
+[Proof-of-work+Captcha](https://basedflare.com/captcha)
 
 ## For generous people
 
