@@ -74,7 +74,7 @@ function postResponse(powResponse, captchaResponse) {
 
 const powFinished = new Promise(resolve => {
 
-	const start = Date.now();
+	let start = Date.now();
 	const workers = [];
 	let finished = false;
 	const stopPow = () => {
@@ -91,7 +91,7 @@ const powFinished = new Promise(resolve => {
 	const submitPow = (answer) => {
 		window.localStorage.setItem('basedflare-pow-response', answer);
 		stopPow();
-		const dummyTime = 3000 - (Date.now()-start);
+		const dummyTime = 4000 - (Date.now()-start);
 		window.setTimeout(() => {
 			resolve({ answer });
 		}, dummyTime);
@@ -152,6 +152,7 @@ const powFinished = new Promise(resolve => {
 				powWorker.onmessage = messageHandler;
 				workers.push(powWorker);
 			}
+			start = Date.now();
 			for (let i = 0; i < workerThreads; i++) {
 				await new Promise(res => setTimeout(res, 10));
 				workers[i].postMessage([userkey, challenge, diff, diffString, powOpts, i, workerThreads]);
