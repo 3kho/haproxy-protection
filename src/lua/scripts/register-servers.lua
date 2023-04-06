@@ -1,6 +1,7 @@
 package.path = package.path  .. "./?.lua;/etc/haproxy/scripts/?.lua;/etc/haproxy/libs/?.lua"
 
 local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
+local utils = require("utils")
 
 -- setup initial server backends based on hosts.map
 function setup_servers()
@@ -22,13 +23,15 @@ function setup_servers()
 	tcp:connect("127.0.0.1", 2000); --TODO: configurable port
 	while line do
 		local domain, backend_host = line:match("([^%s]+)%s+([^%s]+)")
-		-- local host_split = utils.split(backend_host, ":")
-		-- local backend_hostname = host_split[1]
-		-- local backend_port = host_split[2]
+		local new_map_value = server_prefix..counter
+		local existing_map_value = backends_map:lookup(domain)
+		if existing_map_value ~= nil then
+			current_backends = utils.split(existing_map_value, ",")
+			if not utils.contains(current_backends, new_map_value) then
+				new_map_value = new_map_value .. "," .. existing_map_value
+			end
+		end
 		core.set_map("/etc/haproxy/map/backends.map", domain, server_prefix..counter)
-		-- local proxy = core.proxies[backend_name].servers[server_prefix..counter]
-		-- proxy:set_addr(backend_hostname, backend_port)
-		-- proxy:set_ready()
 		local server_name = "servers/websrv"..counter
 		--NOTE: if you have a proper CA setup,
 		if verify_backend_ssl ~= nil then

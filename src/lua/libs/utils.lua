@@ -41,6 +41,14 @@ function _M.split(inputstr, sep)
 	return t
 end
 
+-- check if elem in list
+function _M.contains(list, elem)
+	for _, v in pairs(list) do
+		if v == elem then return true end
+	end
+	return false
+end
+
 -- return true if hash passes difficulty
 function _M.checkdiff(hash, diff)
 	if #hash == 0 then
