@@ -1,6 +1,7 @@
 package.path = package.path  .. "./?.lua;/etc/haproxy/scripts/?.lua;/etc/haproxy/libs/?.lua"
 
 local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
+local backends_map = Map.new('/etc/haproxy/map/backends.map', Map._str)
 local utils = require("utils")
 
 -- setup initial server backends based on hosts.map
@@ -31,7 +32,7 @@ function setup_servers()
 				new_map_value = new_map_value .. "," .. existing_map_value
 			end
 		end
-		core.set_map("/etc/haproxy/map/backends.map", domain, server_prefix..counter)
+		core.set_map("/etc/haproxy/map/backends.map", domain, new_map_value)
 		local server_name = "servers/websrv"..counter
 		--NOTE: if you have a proper CA setup,
 		if verify_backend_ssl ~= nil then
