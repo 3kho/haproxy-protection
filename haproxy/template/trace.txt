@@ -1,6 +1,7 @@
 ts=%Ts.%ms
 h=%[hdr(host)]
 ip=%ci
+cc=%[req.hdr(X-Country-Code)]
 uag=%[req.fhdr(user-agent)]
 http=%HV
 tls=%[ssl_fc]
