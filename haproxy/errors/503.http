@@ -20,7 +20,7 @@ footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-t
 		<p>Sorry, the backend is unreachable or down for essential maintenance. Try again soon!</p>
 		<footer>
 			<p>Node: <code>%[env(RAY_ID)]</code></p>
-			<p>Performance & security by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
+			<p>Performance & security by <a href="https://basedflare.com" rel="noreferrer noopener" target="_blank">BasedFlare</a></p>
 		</footer>
 	</body>
 </html>

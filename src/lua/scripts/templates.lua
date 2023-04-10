@@ -24,8 +24,8 @@ li{margin-bottom: 1em}
 footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-top:1px solid #80808040;padding:10px}
 img{display:inline}
 textarea,input{background:var(--bg-color);color:var(--text-color);border:1px solid var(--text-color);width:100%%;box-sizing: border-box;resize:none;padding:0.5em;font-family:inherit}
-.pt{padding-top:30vh;word-wrap: break-word;}
-.pt img{margin-right:10px}
+.pt{padding-top:30vh;word-wrap: break-word;display:flex;flex-direction:column}
+.pt img{margin:0 auto 10px auto}
 details[open]{border-left-color: #1400ff}			
 .b{display:inline-block;border-radius:50%%;margin:10px;height:16px;width:16px;transform:scale(1);box-shadow:0 0 0 0 #6b93f720;background:#6b93f7;--shadow1:#6b93f790;--shadow2:#6b93f700;--shadow3:#6b93f700;}
 .b.green {background:#31cc31;box-shadow:0 0 0 0 #31cc3120;--shadow1:#31cc3190;--shadow2:#31cc3100;--shadow3:#31cc3100;}
@@ -52,7 +52,7 @@ details[open]{border-left-color: #1400ff}
 		<div class="powstatus"></div>
 		<footer>
 			<p>Node: <code>%s</code></p>
-			<p>Performance & security by <a href="https://gitgud.io/fatchan/haproxy-protection/">haproxy-protection</a></p>
+			<p>Performance & security by <a href="https://basedflare.com" rel="noreferrer noopener" target="_blank">BasedFlare</a></p>
 		</footer>
 	</body>
 </html>
@@ -97,7 +97,7 @@ _M.noscript_extra_sha256 = [[
 -- title with favicon and hostname
 _M.site_name_section = [[
 		<h3 class="pt">
-			<!-- <img src="/favicon.ico" width="32" height="32" alt=" "> -->
+			<img src="/favicon.ico" width="64" height="64" alt=" ">
 			Checking your browser before accessing %s
 		</h3>
 ]]
