@@ -32,13 +32,13 @@ details[open]{border-left-color: #1400ff}
 .b:nth-of-type(1){animation:p 3s infinite}
 .b:nth-of-type(2){animation:p 3s .5s infinite}
 .b:nth-of-type(3){animation:p 3s 1s infinite}
-@keyframes p{0%%{transform:scale(.95);box-shadow:0 0 0 0 var(--shadow1)}70%%{transform:scale(1);box-shadow:0 0 0 10px var(--shadow2)}100%%{transform:scale(.95);box-shadow:0 0 0 0 var(--shadow3)}}
+@keyframes p{0%%{transform:scale(.95);box-shadow:0 0 0 0 var(--shadow1)}70%%{transform:scale(1);box-shadow:0 0 0 8px var(--shadow2)}100%%{transform:scale(.95);box-shadow:0 0 0 0 var(--shadow3)}}
 		</style>
 		<noscript>
 			<style>.jsonly{display:none}</style>
 		</noscript>
-		<script src="/.basedflare/js/argon2.js"></script>
-		<script src="/.basedflare/js/challenge.js"></script>
+		<script src="/.basedflare/js/argon2.min.js"></script>
+		<script src="/.basedflare/js/challenge.min.js"></script>
 	</head>
 	<body data-pow="%s" data-diff="%s" data-time="%s" data-kb="%s" data-mode="%s">
 		%s
@@ -98,14 +98,14 @@ _M.noscript_extra_sha256 = [[
 _M.site_name_section = [[
 		<h3 class="pt">
 			<img src="/favicon.ico" width="64" height="64" alt=" ">
-			Checking your browser before accessing %s
+			Verifying your connection to %s...
 		</h3>
 ]]
 
 -- animation while waiting
 _M.pow_section = [[
 		<p>
-			This process is automatic. Your browser will redirect to your requested content shortly.
+			This process is automatic, please wait a moment.
 		</p>
 		<div class="jsonly">
 			<div id="loader"><div class="b"></div><div class="b"></div><div class="b"></div></div>
