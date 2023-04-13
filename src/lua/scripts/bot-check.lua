@@ -106,6 +106,19 @@ function _M.view(applet)
 			captcha_enabled = true
 		end
 
+		-- return simple json if they send accept: application/json header
+		local accept_header = applet.headers['accept']
+		if accept_header ~= nil and accept_header[0] == 'application/json' then
+			local_pow_combined = string.format('%s#%d#%s#%s', pow_type, math.ceil(pow_difficulty/8), argon_time, argon_kb)
+			response_body = "{\"ch\":\""..combined_challenge.."\",\"ca\":"..(captcha_enabled and "true" or "false")..",\"pow\":\""..local_pow_combined.."\"}"
+			applet:set_status(403)
+			applet:add_header("content-type", "application/json; charset=utf-8")
+			applet:add_header("content-length", string.len(response_body))
+			applet:start_response()
+			applet:send(response_body)
+			return
+		end
+
 		-- pow at least is always enabled when reaching bot-check page
 		site_name_body = string.format(templates.site_name_section, host)
 		if captcha_enabled then
@@ -192,7 +205,8 @@ function _M.view(applet)
 								applet:add_header(
 									"set-cookie",
 									string.format(
-										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
+										--"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
+										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; %s",
 										combined_cookie,
 										applet.headers['host'][0],
 										secure_cookie_flag

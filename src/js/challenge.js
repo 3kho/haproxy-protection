@@ -11,7 +11,6 @@ function updateElem(selector, text, color) {
 function insertError(str) {
 	const loader = document.querySelector("#loader");
 	const captcha = document.querySelector("#captcha");
-	console.log(loader, captcha);
 	(captcha || loader).insertAdjacentHTML(
 		"afterend",
 		`<p class="red">Error: ${str}</p>`,
@@ -50,6 +49,25 @@ const wasmSupported = (() => {
 	}
 	return false;
 })();
+
+// const registerServiceWorker = async () => {
+	// if ("serviceWorker" in navigator) {
+		// try {
+			// const registration = await navigator.serviceWorker.register("/.basedflare/js/serviceworker.min.js", {
+				// scope: "/",
+			// });
+			// if (registration.installing) {
+				// console.log("BasedFlare service worker installing");
+			// } else if (registration.waiting) {
+				// console.log("BasedFlare service worker installed");
+			// } else if (registration.active) {
+				// console.log("BasedFlare service worker active");
+			// }
+		// } catch (error) {
+			// console.error(`BasedFlare worker registration failed: ${error}`);
+		// }
+	// }
+// };
 
 function postResponse(powResponse, captchaResponse) {
 	const body = {
@@ -107,6 +125,7 @@ const powFinished = new Promise((resolve) => {
 	};
 
 	window.addEventListener("DOMContentLoaded", async () => {
+		// registerServiceWorker();
 		const {
 			time,
 			kb,
