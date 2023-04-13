@@ -10,11 +10,11 @@
 					const [ userkey, challenge, _expiry, _signature ] = json.ch.split("#");
 					const [ mode, diff, argon_time, argon_kb ] = json.pow.split("#");
 					if (mode === "argon2") {
-						if (!argon2) {
+						if (!window.argon2) {
 							await new Promise((res) => {
 								const script = document.createElement("script");
 								script.onload = () => res();
-								script.src = something;
+								script.src = "/.basedflare/js/argon2.min.js";
 								document.head.appendChild(script);
 							})
 						}
@@ -65,7 +65,7 @@
 								mem: argon_kb,
 								hashLen: 32,
 								parallelism: 1,
-								type: argon2 ? argon2.ArgonType.Argon2id : null,
+								type: window.argon2 ? window.argon2.ArgonType.Argon2id : null,
 								mode: mode,
 							},
 							i,
@@ -93,6 +93,6 @@
 			}
 			setTimeout(checkCookie, Math.floor(((remainingSecs-cookieMinLife-(Math.random()*300))*1000)));
 		}
-	}
+	};
 	checkCookie();
 })();
