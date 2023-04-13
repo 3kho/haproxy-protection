@@ -1,8 +1,10 @@
 ## haproxy-protection
 
-A fork and further development of a proof of concept from https://github.com/mora9715/haproxy_ddos_protector, a HAProxy configuration and lua scripts allowing a challenge-response page where users solve a captcha and/or proof-of-work. Intended to stop bots, spam, ddos.
+HAProxy configuration and lua scripts allowing a challenge-response page where users solve a captcha and/or proof-of-work. Intended to stop bots, spam, ddos.
 
 Integrates with https://gitgud.io/fatchan/haproxy-panel-next to add/remove/edit domains, protection rules, blocked ips, backend server IPs, etc during runtime.
+
+Originally inspired by a proof of concept from https://github.com/mora9715/haproxy_ddos_protector.
 
 #### Features / improvements in this fork:
 
