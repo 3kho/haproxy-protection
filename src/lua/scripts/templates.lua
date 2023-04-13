@@ -98,15 +98,15 @@ _M.noscript_extra_sha256 = [[
 _M.site_name_section = [[
 		<h3 class="pt">
 			<img src="/favicon.ico" width="64" height="64" alt=" ">
-			Verifying your connection to %s...
+			Verifying your connection to %s
 		</h3>
 ]]
 
 -- animation while waiting
 _M.pow_section = [[
-		<p>
-			This process is automatic, please wait a moment.
-		</p>
+		<span>
+			This process is automatic, please wait a moment...
+		</span>
 		<div class="jsonly">
 			<div id="loader"><div class="b"></div><div class="b"></div><div class="b"></div></div>
 		</div>
