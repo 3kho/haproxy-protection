@@ -2,7 +2,7 @@ if (!window._basedflareAuto) {
 
 	class BasedFlareAuto {
 
-		constuctor(cookieMinLife=600, maxFails=3) {
+		constructor(cookieMinLife=600, maxFails=3) {
 			this.finished = false;
 			this.workers = [];
 			this.fails = 0;
@@ -13,7 +13,8 @@ if (!window._basedflareAuto) {
 			this.checkCookie();
 		}
 
-		checkCookie() {
+		checkCookie = () => {
+			console.log('checkCookie');
 			const powCookie = document.cookie
 				.split("; ")
 				.find((row) => row.startsWith("_basedflare_pow="));
@@ -21,28 +22,30 @@ if (!window._basedflareAuto) {
 				const powCookieValue = powCookie.split("=")[1];
 				const expiry = powCookieValue.split("#")[2];
 				const remainingSecs = ((expiry*1000) - Date.now()) / 1000;
-				console.log('Basedflare cookie check, valid for', remainingSecs, 'seconds');
+				console.log('Basedflare cookie valid for', remainingSecs, 'seconds');
 				if (remainingSecs <= this.cookieMinLife) {
 					return this.doBotCheck();
 				}
-				this.timeout = setTimeout(this.checkCookie, Math.floor(((remainingSecs-this.cookieMinLife+(Math.random()*300))*1000)));
+				this.timeout = setTimeout(this.checkCookie, Math.max(5000, Math.floor(((remainingSecs-this.cookieMinLife+(Math.random()*300))*1000))));
 			}
-		}
+		};
 
-		includeScript(scriptSrc) {
+		includeScript = (scriptSrc) => {
+			console.log('includeScript')
 			return new Promise((res) => {
 				const script = document.createElement("script");
 				script.onload = () => res();
 				script.src = scriptSrc;
 				document.head.appendChild(script);
 			});
-		}
+		};
 
-		messageHandler(e, json) {
+		messageHandler = (e, json) => {
+			console.log('messageHandler')
 			if (e.data.length === 1) { return; }
-			if (this.finished) return;
-			this.finished = true;
+			if (this.finished) { return; }
 			this.workers.forEach((w) => w.terminate());
+			this.finished = true;
 			const [_workerId, answer] = e.data;
 			fetch("/.basedflare/bot-check", {
 				method: "POST",
@@ -59,23 +62,28 @@ if (!window._basedflareAuto) {
 					console.error("basedflare post status >= 400", res);
 				}
 			}).catch((e) => {
-				console.error(e)
+				console.error(e);
+			}).finally(() => {
+				localStorage.removeItem('_basedflare-auto');
 			});
-		}
+		};
 
-		checkRunning() {
+		checkRunning = () => {
+			console.log('checkRunning')
 			const lastCheckTime = localStorage.getItem('_basedflare-auto');
 			if (lastCheckTime) {
 				const lastCheckInt = parseInt(lastCheckTime);
 				if (Date.now() - lastCheckInt < 120)  {
+					console.log('Already running recently')
 					return true;
 				} //else its too old, we just continue
 			}
-		}
+		};
 
-		async doProofOfWork(json) {
+		doProofOfWork = async (json) => {
+			console.log('doProofOfWork')
 			this.workers = [];
-			this.finished = true;
+			this.finished = false;
 			const [ userkey, challenge, _expiry, _signature ] = json.ch.split("#");
 			const [ mode, diff, argon_time, argon_kb ] = json.pow.split("#");
 			if (mode === "argon2") {
@@ -108,12 +116,13 @@ if (!window._basedflareAuto) {
 					workerThreads,
 				]);
 			}
-		}
+		};
 
-		async doBotCheck() {
+		doBotCheck = async () => {
+			console.log('doBotCheck')
+			if (this.checkRunning()) { return; }
+			localStorage.setItem('_basedflare-auto', Date.now());
 			try {
-				if (this.checkRunning()) { return; }
-				localStorage.setItem('_basedflare-auto', Date.now());
 				const json = await fetch("/.basedflare/bot-check", {
 						headers: {
 							"accept": "application/json"
@@ -128,18 +137,17 @@ if (!window._basedflareAuto) {
 					// TODO: doCaptchaPopup();
 					console.warn('Basedflare auto captcha not yet supported');
 				} else {
-					this.doProofOfWork(json);
+					await this.doProofOfWork(json);
 				}
 			} catch(e) {
 				console.error(e);
 				this.fails++;
 			} finally {
-				localStorage.removeItem('_basedflare-auto');
 				if (this.fails < this.maxFails) {
-					this.timeout = setTimeout(this.checkCookie, 5000*this.fails);
+					this.timeout = setTimeout(this.checkCookie, 30000);
 				}
 			}
-		}
+		};
 
 	}
 
