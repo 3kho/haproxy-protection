@@ -91,7 +91,7 @@ function postResponse(powResponse, captchaResponse) {
 		} else if (s >= 500) {
 			return insertError("Server encountered an error.");
 		}
-		window.localStorage.setItem("basedflare-redirect", Math.random());
+		window.localStorage.setItem("_basedflare-redirect", Math.random());
 		finishRedirect();
 	}).catch(() => {
 		insertError("Failed to send request to server.");
@@ -114,7 +114,7 @@ const powFinished = new Promise((resolve) => {
 		workers.forEach((w) => w.terminate());
 	};
 	const submitPow = (answer) => {
-		window.localStorage.setItem("basedflare-pow-response", answer);
+		window.localStorage.setItem("_basedflare-pow-response", answer);
 		stopPow();
 		const dummyTime = 3500 - (Date.now() - start);
 		window.setTimeout(() => {
@@ -135,14 +135,14 @@ const powFinished = new Promise((resolve) => {
 		} =
 		document.querySelector("[data-pow]").dataset;
 		window.addEventListener("storage", (event) => {
-			if (event.key === "basedflare-pow-response" && !finished) {
+			if (event.key === "_basedflare-pow-response" && !finished) {
 				console.log("Got answer", event.newValue, "from storage event");
 				stopPow();
 				resolve({
 					answer: event.newValue,
 					localStorage: true
 				});
-			} else if (event.key === "basedflare-redirect") {
+			} else if (event.key === "_basedflare-redirect") {
 				console.log("Redirecting, solved in another tab");
 				finishRedirect();
 			}
