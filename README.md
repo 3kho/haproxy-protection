@@ -24,6 +24,7 @@ Originally inspired by a proof of concept from https://github.com/mora9715/hapro
   - Maintenance mode page for selected domains.
 - Geoip mapping support for alt-svc headers.
 - Support simple load balancing to multiple backends per domain dynamically.
+- Multiple language support with locales files (currently en-US and pt-PT).
 - Fix multiple security issues.
 - Many bugfixes.
 

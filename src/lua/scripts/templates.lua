@@ -4,9 +4,9 @@ local _M = {}
 _M.body = [[
 <!DOCTYPE html>
 <html>
-	<head>
+	<head lang="%s">
 		<meta name='viewport' content='width=device-width initial-scale=1'>
-		<title>Hold on...</title>
+		<title>%s</title>
 		<style>
 :root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#fff}}
@@ -46,13 +46,13 @@ details[open]{border-left-color: #1400ff}
 		%s
 		<noscript>
 			<br>
-			<p class="red left">JavaScript is required on this page.</p>
+			<p class="red left">%s</p>
 			%s
 		</noscript>
 		<div class="powstatus"></div>
 		<footer>
 			<p>Node: <code>%s</code></p>
-			<p>Performance & security by <a href="https://basedflare.com" rel="noreferrer noopener" target="_blank">BasedFlare</a></p>
+			<p>%s</p>
 		</footer>
 	</body>
 </html>
@@ -60,16 +60,16 @@ details[open]{border-left-color: #1400ff}
 
 _M.noscript_extra_argon2 = [[
 			<details>
-				<summary>No JavaScript?</summary>
+				<summary>%s</summary>
 				<ol>
 					<li>
-						<p>Run this in a linux terminal (requires <code>argon2</code> package installed):</p>
+						<p>%s</p>
 						<code style="word-break: break-all;">
 							echo "Q0g9IiQyIjtCPSQocHJpbnRmIDAlLjBzICQoc2VxIDEgJDUpKTtlY2hvICJXb3JraW5nLi4uIjtJPTA7d2hpbGUgdHJ1ZTsgZG8gSD0kKGVjaG8gLW4gJENIJEkgfCBhcmdvbjIgJDEgLWlkIC10ICQ2IC1rICQ3IC1wIDEgLWwgMzIgLXIpO0U9JHtIOjA6JDV9O1tbICRFID09ICRCIF1dICYmIGVjaG8gIk91dHB1dDoiICYmIGVjaG8gJDEjJDIjJDMjJDQjJEkgJiYgZXhpdCAwOygoSSsrKSk7ZG9uZTsK" | base64 -d | bash -s %s %s %s %s %s %s %s
 						</code>
-					<li>Paste the script output into the box and submit:
+					<li>%s
 					<form method="post">
-						<textarea name="pow_response" placeholder="script output" required></textarea>
+						<textarea name="pow_response" required></textarea>
 						<div><input type="submit" value="submit" /></div>
 					</form>
 				</ol>
@@ -78,16 +78,16 @@ _M.noscript_extra_argon2 = [[
 
 _M.noscript_extra_sha256 = [[
 			<details>
-				<summary>No JavaScript?</summary>
+				<summary>%s</summary>
 				<ol>
 					<li>
-						<p>Run this in a linux terminal (requires <code>perl</code>):</p>
+						<p>%s</p>
 						<code style="word-break: break-all;">
 							echo "dXNlIHN0cmljdDt1c2UgRGlnZXN0OjpTSEEgcXcoc2hhMjU2X2hleCk7cHJpbnQgIldvcmtpbmcuLi4iO215JGM9IiRBUkdWWzBdIi4iJEFSR1ZbMV0iO215JGlkPSRBUkdWWzRdKzA7bXkkZD0iMCJ4JGlkO215JGk9MDt3aGlsZSgxKXtsYXN0IGlmICRkIGVxIHN1YnN0ciBzaGEyNTZfaGV4KCRjLCRpKSwwLCRpZDskaSsrfXByaW50IlxuT3V0cHV0OlxuJEFSR1ZbMF0jJEFSR1ZbMV0jJEFSR1ZbMl0jJEFSR1ZbM10jJGlcbiI=" | base64 -d | perl -w - %s %s %s %s %s %s %s
 						</code>
-					<li>Paste the script output into the box and submit:
+					<li>%s
 					<form method="post">
-						<textarea name="pow_response" placeholder="script output" required></textarea>
+						<textarea name="pow_response" required></textarea>
 						<div><input type="submit" value="submit" /></div>
 					</form>
 				</ol>
@@ -98,14 +98,14 @@ _M.noscript_extra_sha256 = [[
 _M.site_name_section = [[
 		<h3 class="pt">
 			<img src="/favicon.ico" width="64" height="64" alt=" ">
-			Verifying your connection to %s
+			%s
 		</h3>
 ]]
 
 -- animation while waiting
 _M.pow_section = [[
 		<span>
-			This process is automatic, please wait a moment...
+			%s
 		</span>
 		<div class="jsonly">
 			<div id="loader"><div class="b"></div><div class="b"></div><div class="b"></div></div>
@@ -125,7 +125,7 @@ _M.pow_section = [[
 -- message, captcha form and submit button
 _M.captcha_section = [[
 		<p>
-			Please solve the captcha to continue.
+			%s
 		</p>
 		<div id="captcha" class="jsonly">
 			<div class="%s" data-sitekey="%s" data-callback="onCaptchaSubmit"></div>

@@ -1,0 +1,23 @@
+{
+	"Maintenance Mode": "Maintenance Mode",
+	"Under maintenance. Please try again soon!": "Under maintenance. Please try again soon!",
+	"Hold on...": "Hold on...",
+	"Browser does not support Web Workers.": "Browser does not support Web Workers.",
+	"Browser does not support WebAssembly.": "Browser does not support WebAssembly.",
+	"Server rejected your submission.": "Server rejected your submission.",
+	"Server encountered an error.": "Server encountered an error.",
+	"Failed to send request to server.": "Failed to send request to server.",
+	"Working, ≈%ss remaining": "Working, ≈%ss remaining",
+	"Waiting for captcha.": "Waiting for captcha.",
+	"Submitting...": "Submitting...",
+	"Performance & security by BasedFlare": "Performance & security by <a href=\"https://basedflare.com\" rel=\"noreferrer noopener\" target=\"_blank\">BasedFlare</a>",
+	"Verifying your connection to %s": "Verifying your connection to %s",
+	"This process is automatic, please wait a moment...": "This process is automatic, please wait a moment...",
+	"Please solve the captcha to continue.": "Please solve the captcha to continue.",
+	"JavaScript is required on this page.": "JavaScript is required on this page.",
+	"No JavaScript?": "No JavaScript?",
+	"Run this in a linux terminal (requires <code>argon2</code> package installed):": "Run this in a linux terminal (requires <code>argon2</code> package installed):",
+	"Run this in a linux terminal (requires <code>perl</code>):": "Run this in a linux terminal (requires <code>perl</code>):",
+	"Paste the script output into the box and submit:": "Paste the script output into the box and submit:",
+	"submit": "submit"
+}

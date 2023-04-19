@@ -17,6 +17,7 @@ services:
       - ./src/lua/scripts/:/etc/haproxy/scripts/
       - ./src/lua/libs/:/etc/haproxy/libs/
       - ./src/js/:/etc/haproxy/js/
+      - ./src/locales/:/etc/haproxy/locales/
     environment:
       # These are the hcaptcha and recaptcha test keys, not leaking any dont worry :^)
       - HCAPTCHA_SITEKEY=20000000-ffff-ffff-ffff-000000000002

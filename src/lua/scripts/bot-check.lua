@@ -11,6 +11,19 @@ local cookie = require("cookie")
 local json = require("json")
 local randbytes = require("randbytes")
 local templates = require("templates")
+local locales_path = "/etc/haproxy/locales/"
+local locales_table = {}
+-- local locales_strings = {}
+for file_name in io.popen('ls "'..locales_path..'"*.json'):lines() do
+	local file_name_with_path = utils.split(file_name, "/")
+	local file_name_without_ext = utils.split(file_name_with_path[#file_name_with_path], ".")[1]
+	local file = io.open(file_name, "r")
+	local json_contents = file:read("*all")
+	local json_object = json.decode(json_contents)
+	file:close()
+	locales_table[file_name_without_ext] = json_object
+	-- locales_strings[file_name_without_ext] = json_contents
+end
 
 -- POW
 local pow_type = os.getenv("POW_TYPE") or "argon2"
@@ -74,7 +87,30 @@ function _M.kill_tor_circuit(txn)
 	utils.send_tor_control_port(circuit_identifier)
 end
 
+-- read first language from accept-language in applet
+local default_lang = "en-US"
+function _M.get_first_language(applet)
+	local accept_language = applet.headers["accept-language"] or {}
+	accept_language = accept_language[0] or ""
+	if #accept_language > 0 and #accept_language < 100 then -- length limit preventing abuse
+		for lang in accept_language:gmatch("[^,%s]+") do
+			if not lang:find(";") then
+				return lang
+			end
+		end
+	end
+end
+
+
 function _M.view(applet)
+
+	-- set the ll language var based off header or default to en-US
+	local lang = _M.get_first_language(applet)
+	local ll = locales_table[lang]
+	if ll == nil then
+		ll = locales_table[default_lang]
+		lang = default_lang
+	end
 
 	-- set response body and declare status code
 	local response_body = ""
@@ -120,27 +156,62 @@ function _M.view(applet)
 		end
 
 		-- pow at least is always enabled when reaching bot-check page
-		site_name_body = string.format(templates.site_name_section, host)
+		site_name_body = string.format(
+			templates.site_name_section,
+			string.format(ll["Verifying your connection to %s"], host)
+		)
 		if captcha_enabled then
-			captcha_body = string.format(templates.captcha_section, captcha_classname,
-				captcha_sitekey, captcha_script_src)
+			captcha_body = string.format(
+				templates.captcha_section,
+				ll["Please solve the captcha to continue."],
+				captcha_classname,
+				captcha_sitekey,
+				captcha_script_src
+			)
 		else
-			pow_body = templates.pow_section
+			pow_body = string.format(
+				templates.pow_section,
+				ll["This process is automatic, please wait a moment..."]
+			)
 			local noscript_extra
 			if pow_type == "argon2" then
 				noscript_extra = templates.noscript_extra_argon2
 			else
 				noscript_extra = templates.noscript_extra_sha256
 			end
-			noscript_extra_body = string.format(noscript_extra, user_key,
-				challenge_hash, expiry, signature, math.ceil(pow_difficulty/8), 
-				argon_time, argon_kb)
+			noscript_extra_body = string.format(
+				noscript_extra,
+				ll["No JavaScript?"],
+				ll["Run this in a linux terminal (requires <code>perl</code>):"],
+				user_key,
+				challenge_hash,
+				expiry,
+				signature,
+				math.ceil(pow_difficulty/8),
+				argon_time,
+				argon_kb,
+				ll["Paste the script output into the box and submit:"]
+			)
 		end
 
 		-- sub in the body sections
-		response_body = string.format(templates.body, combined_challenge,
-			pow_difficulty, argon_time, argon_kb, pow_type,
-			site_name_body, pow_body, captcha_body, noscript_extra_body, ray_id)
+		response_body = string.format(
+			templates.body,
+			lang,
+			ll["Hold on..."],
+			combined_challenge,
+			pow_difficulty,
+			argon_time,
+			argon_kb,
+			pow_type,
+			site_name_body,
+			pow_body,
+			captcha_body,
+			ll["JavaScript is required on this page."],
+			noscript_extra_body,
+			ray_id,
+			ll["Performance & security by BasedFlare"]
+		)
 		response_status_code = 403
 
 	-- if request is POST, check the answer to the pow/cookie
