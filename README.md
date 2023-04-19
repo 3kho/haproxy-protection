@@ -20,8 +20,10 @@ Originally inspired by a proof of concept from https://github.com/mora9715/hapro
 - Improved the appearance of the challenge page.
 - Add several useful maps & acls to the haproxy config:
   - Whitelist or blacklist IPs/subnets.
-  - Simple redirect/rewrite map for domains.
+  - Rerwite/redirect specific paths or whole domains.
   - Maintenance mode page for selected domains.
+- Geoip mapping support for alt-svc headers.
+- Support simple load balancing to multiple backends per domain dynamically.
 - Fix multiple security issues.
 - Many bugfixes.
 
