@@ -4,7 +4,7 @@ local _M = {}
 _M.body = [[
 <!DOCTYPE html>
 <html>
-	<head lang="%s">
+	<head lang="%s" data-langjson='%s'>
 		<meta name='viewport' content='width=device-width initial-scale=1'>
 		<title>%s</title>
 		<style>
@@ -111,6 +111,7 @@ _M.pow_section = [[
 			<div id="loader"><div class="b"></div><div class="b"></div><div class="b"></div></div>
 		</div>
 ]]
+
 -- alternative, spinner animation
 -- .loader{display:inline-block;position:relative;width:80px;height:80px}
 -- .loader div{box-sizing:border-box;display:block;position:absolute;width:32px;height:32px;margin:10px;border:5px solid var(--text-color);border-radius:50%%;animation:loader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:var(--text-color) transparent transparent transparent}

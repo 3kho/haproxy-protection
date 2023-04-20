@@ -1,3 +1,10 @@
+let TRANSLATIONS;
+
+function __(key, replacement=null) {
+	const translation = TRANSLATIONS[key] || key;
+	return replacement !== null ? translation.replace('%s', replacement) : translation;
+}
+
 function updateElem(selector, text, color) {
 	const updateElem = document.querySelector(selector);
 	if (updateElem) {
@@ -87,14 +94,14 @@ function postResponse(powResponse, captchaResponse) {
 	}).then((res) => {
 		const s = res.status;
 		if (s >= 400 && s < 500) {
-			return insertError("Server rejected your submission.");
+			return insertError(__("Server rejected your submission."));
 		} else if (s >= 500) {
-			return insertError("Server encountered an error.");
+			return insertError(__("Server encountered an error."));
 		}
 		window.localStorage.setItem("_basedflare-redirect", Math.random());
 		finishRedirect();
 	}).catch(() => {
-		insertError("Failed to send request to server.");
+		insertError(__("Failed to send request to server."));
 	});
 }
 
@@ -106,9 +113,9 @@ const powFinished = new Promise((resolve) => {
 		finished = true;
 		const hasCaptcha = document.getElementById("captcha");
 		if (hasCaptcha) {
-			updateElem(".powstatus", "Waiting for captcha.", "#31cc31");
+			updateElem(".powstatus", __("Waiting for captcha."), "#31cc31");
 		} else {
-			updateElem(".powstatus", "Submitting...", "#31cc31");
+			updateElem(".powstatus", __("Submitting..."), "#31cc31");
 			makeLoaderGreen();
 		}
 		workers.forEach((w) => w.terminate());
@@ -125,6 +132,7 @@ const powFinished = new Promise((resolve) => {
 	};
 
 	window.addEventListener("DOMContentLoaded", async () => {
+		TRANSLATIONS = JSON.parse(document.head.dataset.langjson);
 		// registerServiceWorker();
 		const {
 			time,
@@ -149,7 +157,7 @@ const powFinished = new Promise((resolve) => {
 		});
 
 		if (!wasmSupported) {
-			return insertError("Browser does not support WebAssembly.");
+			return insertError(__("Browser does not support WebAssembly."));
 		}
 		const powOpts = {
 			time: time,
@@ -185,7 +193,7 @@ const powFinished = new Promise((resolve) => {
 					console.log(`${hps}H/s, ≈${remainingSec}s remaining`);
 					return updateElem(
 						".powstatus",
-						`Working,  ≈${remainingSec}s remaining`,
+						__('Working, ≈%ss remaining', remainingSec),
 					);
 				}
 				if (finished) return;
@@ -219,7 +227,7 @@ const powFinished = new Promise((resolve) => {
 				]);
 			}
 		} else {
-			return insertError("Browser does not support Web Workers.");
+			return insertError(__("Browser does not support Web Workers."));
 		}
 	});
 }).then((powResponse) => {
@@ -241,7 +249,7 @@ function onCaptchaSubmit(captchaResponse) {
 	);
 	captchaElem.remove();
 	powFinished.then((powResponse) => {
-		updateElem(".powstatus", "Submitting...", "#31cc31");
+		updateElem(".powstatus", __("Submitting..."), "#31cc31");
 		makeLoaderGreen();
 		postResponse(powResponse, captchaResponse);
 	});

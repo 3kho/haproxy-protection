@@ -13,7 +13,7 @@ local randbytes = require("randbytes")
 local templates = require("templates")
 local locales_path = "/etc/haproxy/locales/"
 local locales_table = {}
--- local locales_strings = {}
+local locales_strings = {}
 for file_name in io.popen('ls "'..locales_path..'"*.json'):lines() do
 	local file_name_with_path = utils.split(file_name, "/")
 	local file_name_without_ext = utils.split(file_name_with_path[#file_name_with_path], ".")[1]
@@ -22,7 +22,7 @@ for file_name in io.popen('ls "'..locales_path..'"*.json'):lines() do
 	local json_object = json.decode(json_contents)
 	file:close()
 	locales_table[file_name_without_ext] = json_object
-	-- locales_strings[file_name_without_ext] = json_contents
+	locales_strings[file_name_without_ext] = json_contents
 end
 
 -- POW
@@ -104,13 +104,14 @@ end
 
 function _M.view(applet)
 
-	-- set the ll language var based off header or default to en-US
+	-- set the ll and ls language var based off header or default to en-US
 	local lang = _M.get_first_language(applet)
 	local ll = locales_table[lang]
 	if ll == nil then
 		ll = locales_table[default_lang]
 		lang = default_lang
 	end
+	local ls = locales_strings[lang]
 
 	-- set response body and declare status code
 	local response_body = ""
@@ -198,6 +199,7 @@ function _M.view(applet)
 		response_body = string.format(
 			templates.body,
 			lang,
+			ls,
 			ll["Hold on..."],
 			combined_challenge,
 			pow_difficulty,
