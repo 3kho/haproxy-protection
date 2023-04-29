@@ -175,15 +175,18 @@ function _M.view(applet)
 				ll["This process is automatic, please wait a moment..."]
 			)
 			local noscript_extra
+			local noscript_prompt
 			if pow_type == "argon2" then
 				noscript_extra = templates.noscript_extra_argon2
+				noscript_prompt = ll["Run this in a linux terminal (requires <code>argon2</code> package installed):"]
 			else
 				noscript_extra = templates.noscript_extra_sha256
+				noscript_prompt = ll["Run this in a linux terminal (requires <code>perl</code>):"]
 			end
 			noscript_extra_body = string.format(
 				noscript_extra,
 				ll["No JavaScript?"],
-				ll["Run this in a linux terminal (requires <code>perl</code>):"],
+				noscript_prompt,
 				user_key,
 				challenge_hash,
 				expiry,
