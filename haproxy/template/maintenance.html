@@ -10,13 +10,16 @@ a,a:visited{color:var(--text-color)}
 body,html{height:100%%}
 body{display:flex;flex-direction:column;background-color:var(--bg-color);color:var(--text-color);font-family:Helvetica,Arial,sans-serif;max-width:60em;margin:0 auto;padding: 0 20px}
 code{background-color:#dfdfdf30;border-radius:4px;padding:0 3px;color:#ff6590}
-.pt{padding-top:30vh;display:flex;align-items:center;word-break:break-all;justify-content: center;}
+.pt{padding-top:30vh;display:flex;align-items:center;word-break:break-all;justify-content: center;flex-direction: column;}
 img,h3{margin:0 0 5px 0;font-weight:normal}
 footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-top:1px solid #80808040;padding:10px}
 		</style>
 	</head>
 	<body>
-		<h3 class="pt">Under maintenance. Please try again soon!</h3>
+		<h3 class="pt">
+			<img src="/.basedflare/pow-icon" width="64" height="64" alt=" ">
+			Under maintenance. Please try again soon!
+		</h3>
 		<footer>
 			<p>Node: <code>%[env(RAY_ID)]</code></p>
 			<p>Performance & security by <a href="https://basedflare.com" rel="noreferrer noopener" target="_blank">BasedFlare</a></p>
