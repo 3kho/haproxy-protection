@@ -282,7 +282,7 @@ function _M.view(applet)
 									"set-cookie",
 									string.format(
 										--"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
-										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; %s",
+										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=%s; SameSite=Strict; %s",
 										combined_cookie,
 										applet.headers['host'][0],
 										secure_cookie_flag
@@ -345,7 +345,7 @@ function _M.view(applet)
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"_basedflare_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
+						"_basedflare_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=%s; SameSite=Strict; HttpOnly;%s",
 						combined_cookie,
 						applet.headers['host'][0],
 						secure_cookie_flag
