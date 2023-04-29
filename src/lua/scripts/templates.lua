@@ -97,7 +97,7 @@ _M.noscript_extra_sha256 = [[
 -- title with favicon and hostname
 _M.site_name_section = [[
 		<h3 class="pt">
-			<img src="/favicon.ico" width="64" height="64" alt=" ">
+			<img src="/.basedflare/pow-icon" width="64" height="64" alt=" ">
 			%s
 		</h3>
 ]]
