@@ -1,8 +1,5 @@
 local _M = {}
-
 local sha = require("sha")
-local challenge_expiry = tonumber(os.getenv("CHALLENGE_EXPIRY"))
-local challenge_includes_ip = os.getenv("CHALLENGE_INCLUDES_IP")
 local tor_control_port_password = os.getenv("TOR_CONTROL_PORT_PASSWORD")
 
 -- get header from different place depending on action vs view
@@ -18,20 +15,20 @@ function _M.get_header_from_context(context, header_name, is_applet)
 end
 
 -- generate the challenge hash/user hash
-function _M.generate_challenge(context, salt, user_key, is_applet)
+function _M.generate_challenge(context, salt, user_key, ddos_config, is_applet)
 
 	-- optional IP to lock challenges/user_keys to IP (for clearnet or single-onion aka 99% of cases)
 	local ip = ""
-	if challenge_includes_ip == "1" then
+	if ddos_config["cip"] == true then
 		ip = context.sf:src()
 	end
 
 	-- user agent to counter very dumb spammers
-	local user_agent = _M.get_header_from_context(context, 'user-agent', is_applet)
+	local user_agent = _M.get_header_from_context(context, "user-agent", is_applet)
 
 	local challenge_hash = sha.sha3_256(salt .. ip .. user_key .. user_agent)
 
-	local expiry = core.now()['sec'] + challenge_expiry
+	local expiry = core.now()["sec"] + ddos_config["cex"]
 
 	return challenge_hash, expiry
 

@@ -31,7 +31,7 @@ services:
       - CHALLENGE_EXPIRY=43200
       - BACKEND_NAME=servers
       - SERVER_PREFIX=websrv
-      - CHALLENGE_INCLUDES_IP=1
+      - CHALLENGE_INCLUDES_IP=true
       - ARGON_TIME=2
       - ARGON_KB=512
       - POW_DIFFICULTY=24

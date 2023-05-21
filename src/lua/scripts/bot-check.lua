@@ -11,6 +11,8 @@ local cookie = require("cookie")
 local json = require("json")
 local randbytes = require("randbytes")
 local templates = require("templates")
+
+-- load locales
 local locales_path = "/etc/haproxy/locales/"
 local locales_table = {}
 local locales_strings = {}
@@ -26,28 +28,30 @@ for file_name in io.popen('ls "'..locales_path..'"*.json'):lines() do
 end
 
 -- POW
-local pow_type = os.getenv("POW_TYPE") or "argon2"
-local pow_difficulty = tonumber(os.getenv("POW_DIFFICULTY") or 18)
--- argon2
+local sha = require("sha")
 local argon2 = require("argon2")
-local argon_kb = tonumber(os.getenv("ARGON_KB") or 6000)
 local argon_time = tonumber(os.getenv("ARGON_TIME") or 1)
-argon2.t_cost(argon_time)
-argon2.m_cost(argon_kb)
+local argon_kb = tonumber(os.getenv("ARGON_KB") or 6000)
 argon2.parallelism(1)
 argon2.hash_len(32)
 argon2.variant(argon2.variants.argon2_id)
--- sha2
-local sha = require("sha")
+argon2.t_cost(argon_time)
+argon2.m_cost(argon_kb)
+local ddos_config_map = Map.new("/etc/haproxy/map/ddos_config.map", Map._str)
+local ddos_default_config = {
+	["pt"] = os.getenv("POW_TYPE") or "argon2",
+	["pd"] = tonumber(os.getenv("POW_DIFFICULTY") or 18),
+	["cip"] = (os.getenv("CHALLENGE_INCLUDES_IP") ~= nil and true or false),
+	["cex"] = tonumber(os.getenv("CHALLENGE_EXPIRY")),
+}
 
--- environment variables
+-- captcha variables
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
 local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY") or os.getenv("RECAPTCHA_SITEKEY")
 local captcha_cookie_secret = os.getenv("CAPTCHA_COOKIE_SECRET")
 local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 local hmac_cookie_secret = os.getenv("HMAC_COOKIE_SECRET")
 local ray_id = os.getenv("RAY_ID")
-
 -- load captcha map and set hcaptcha/recaptch based off env vars
 local captcha_map = Map.new("/etc/haproxy/map/ddos.map", Map._str);
 local captcha_provider_domain = ""
@@ -90,7 +94,7 @@ end
 -- read first language from accept-language in applet (note: does not consider q values)
 local default_lang = "en-US"
 function _M.get_first_language(context, is_applet)
-	local accept_language = utils.get_header_from_context(context, 'accept-language', is_applet)
+	local accept_language = utils.get_header_from_context(context, "accept-language", is_applet)
 	if #accept_language > 0 and #accept_language < 100 then -- length limit preventing abuse
 		for lang in accept_language:gmatch("[^,%s]+") do
 			if not lang:find(";") then
@@ -100,7 +104,22 @@ function _M.get_first_language(context, is_applet)
 	end
 end
 
+-- get ddos config from map or take default
+function _M.get_ddos_config(context, is_applet)
+	local host = utils.get_header_from_context(context, "host", is_applet)
+	local ddos_config = ddos_config_map:lookup(host)
+	if ddos_config ~= nil then
+		ddos_config = json.decode(ddos_config)
+	else
+		ddos_config = ddos_default_config
+	end
+	return ddos_config
+end
+
 function _M.view(applet)
+
+	-- host header
+	local host = applet.headers['host'][0]
 
 	-- set the ll and ls language var based off header or default to en-US
 	local lang = _M.get_first_language(applet, true)
@@ -115,12 +134,15 @@ function _M.view(applet)
 	local response_body = ""
 	local response_status_code
 
+	-- get the config from ddos_config.map
+	local ddos_config = _M.get_ddos_config(applet, true)
+
 	-- if request is GET, serve the challenge page
 	if applet.method == "GET" then
 
 		-- get the user_key#challenge#sig
 		local user_key = sha.bin_to_hex(randbytes(16))
-		local challenge_hash, expiry = utils.generate_challenge(applet, pow_cookie_secret, user_key, true)
+		local challenge_hash, expiry = utils.generate_challenge(applet, pow_cookie_secret, user_key, ddos_config, true)
 		local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. challenge_hash .. expiry)
 		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. expiry .. "#" .. signature
 
@@ -132,7 +154,6 @@ function _M.view(applet)
 
 		-- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
 		local captcha_enabled = false
-		local host = applet.headers['host'][0]
 		local path = applet.qs; --because on /.basedflare/bot-check?/whatever, .qs (query string) holds the "path"
 
 		local captcha_map_lookup = captcha_map:lookup(host..path) or captcha_map:lookup(host) or 0
@@ -144,7 +165,7 @@ function _M.view(applet)
 		-- return simple json if they send accept: application/json header
 		local accept_header = applet.headers['accept']
 		if accept_header ~= nil and accept_header[0] == 'application/json' then
-			local_pow_combined = string.format('%s#%d#%s#%s', pow_type, math.ceil(pow_difficulty/8), argon_time, argon_kb)
+			local_pow_combined = string.format('%s#%d#%s#%s', ddos_config["pt"], math.ceil(ddos_config["pd"]/8), argon_time, argon_kb)
 			response_body = "{\"ch\":\""..combined_challenge.."\",\"ca\":"..(captcha_enabled and "true" or "false")..",\"pow\":\""..local_pow_combined.."\"}"
 			applet:set_status(403)
 			applet:add_header("content-type", "application/json; charset=utf-8")
@@ -174,7 +195,7 @@ function _M.view(applet)
 			)
 			local noscript_extra
 			local noscript_prompt
-			if pow_type == "argon2" then
+			if ddos_config["pt"] == "argon2" then
 				noscript_extra = templates.noscript_extra_argon2
 				noscript_prompt = ll["Run this in a linux terminal (requires <code>argon2</code> package installed):"]
 			else
@@ -189,7 +210,7 @@ function _M.view(applet)
 				challenge_hash,
 				expiry,
 				signature,
-				math.ceil(pow_difficulty/8),
+				math.ceil(ddos_config["pd"]/8),
 				argon_time,
 				argon_kb,
 				ll["Paste the script output into the box and submit:"]
@@ -203,10 +224,10 @@ function _M.view(applet)
 			ls,
 			ll["Hold on..."],
 			combined_challenge,
-			pow_difficulty,
+			ddos_config["pd"],
 			argon_time,
 			argon_kb,
-			pow_type,
+			ddos_config["pt"],
 			site_name_body,
 			pow_body,
 			captcha_body,
@@ -252,7 +273,7 @@ function _M.view(applet)
 				if number_expiry ~= nil and number_expiry > core.now()['sec'] then
 
 					-- regenerate the challenge and compare it
-					local generated_challenge_hash = utils.generate_challenge(applet, pow_cookie_secret, given_user_key, true)
+					local generated_challenge_hash = utils.generate_challenge(applet, pow_cookie_secret, given_user_key, ddos_config, true)
 
 					if given_challenge_hash == generated_challenge_hash then
 
@@ -263,7 +284,7 @@ function _M.view(applet)
 
 							-- do the work with their given answer
 							local hex_hash_output = ""
-							if pow_type == "argon2" then
+							if ddos_config["pt"] == "argon2" then
 								local encoded_argon_hash = argon2.hash_encoded(given_challenge_hash .. given_answer, given_user_key)
 								local trimmed_argon_hash = utils.split(encoded_argon_hash, '$')[6]:sub(0, 43) -- https://github.com/thibaultcha/lua-argon2/issues/37
 								hex_hash_output = sha.bin_to_hex(sha.base64_to_bin(trimmed_argon_hash));
@@ -271,7 +292,7 @@ function _M.view(applet)
 								hex_hash_output = sha.sha256(given_user_key .. given_challenge_hash .. given_answer)
 							end
 
-							if utils.checkdiff(hex_hash_output, pow_difficulty) then
+							if utils.checkdiff(hex_hash_output, ddos_config["pd"]) then
 
 								-- the answer was good, give them a cookie
 								local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry .. given_answer)
@@ -337,7 +358,7 @@ function _M.view(applet)
 			-- the response was good i.e the captcha provider says they passed, give them a cookie
 			if api_response.success == true then
 				local user_key = sha.bin_to_hex(randbytes(16))
-				local user_hash = utils.generate_challenge(applet, captcha_cookie_secret, user_key, true)
+				local user_hash = utils.generate_challenge(applet, captcha_cookie_secret, user_key, ddos_config, true)
 				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash .. matched_expiry)
 				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. matched_expiry .. "#" .. signature
 				applet:add_header(
@@ -422,7 +443,8 @@ function _M.check_captcha_status(txn)
 		return
 	end
 	-- regenerate the user hash and compare it
-	local generated_user_hash = utils.generate_challenge(txn, captcha_cookie_secret, given_user_key, false)
+	local ddos_config = _M.get_ddos_config(txn, false)
+	local generated_user_hash = utils.generate_challenge(txn, captcha_cookie_secret, given_user_key, ddos_config, false)
 	if generated_user_hash ~= given_user_hash then
 		return
 	end
@@ -454,7 +476,8 @@ function _M.check_pow_status(txn)
 		return
 	end
 	-- regenerate the challenge and compare it
-	local generated_challenge_hash = utils.generate_challenge(txn, pow_cookie_secret, given_user_key, false)
+	local ddos_config = _M.get_ddos_config(txn, false)
+	local generated_challenge_hash = utils.generate_challenge(txn, pow_cookie_secret, given_user_key, ddos_config, false)
 	if given_challenge_hash ~= generated_challenge_hash then
 		return
 	end
