@@ -5,6 +5,18 @@ local challenge_expiry = tonumber(os.getenv("CHALLENGE_EXPIRY"))
 local challenge_includes_ip = os.getenv("CHALLENGE_INCLUDES_IP")
 local tor_control_port_password = os.getenv("TOR_CONTROL_PORT_PASSWORD")
 
+-- get header from different place depending on action vs view
+function _M.get_header_from_context(context, header_name, is_applet)
+	local header_content = ""
+	if is_applet == true then
+		header_content = context.headers[header_name] or {}
+		header_content = header_content[0] or ""
+	else
+		header_content = context.sf:req_fhdr(header_name) or ""
+	end
+	return header_content
+end
+
 -- generate the challenge hash/user hash
 function _M.generate_challenge(context, salt, user_key, is_applet)
 
@@ -15,14 +27,7 @@ function _M.generate_challenge(context, salt, user_key, is_applet)
 	end
 
 	-- user agent to counter very dumb spammers
-	local user_agent = ""
-	if is_applet == true then
-		user_agent = context.headers['user-agent'] or {}
-		user_agent = user_agent[0] or ""
-	else
-		--note req_fhdr not req_hdr otherwise commas in useragent become a delimiter
-		user_agent = context.sf:req_fhdr('user-agent') or ""
-	end
+	local user_agent = _M.get_header_from_context(context, 'user-agent', is_applet)
 
 	local challenge_hash = sha.sha3_256(salt .. ip .. user_key .. user_agent)
 

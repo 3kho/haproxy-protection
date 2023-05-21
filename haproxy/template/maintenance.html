@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-		<title>Maintenance Mode</title>
+		<title>%[var(txn.lang_json),json_query($.Maintenance Mode)]</title>
 		<style type="text/css">
 :root{--text-color:#c5c8c6;--bg-color:#1d1f21}
 @media (prefers-color-scheme:light){:root{--text-color:#333;--bg-color:#fff}}
@@ -18,11 +18,11 @@ footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-t
 	<body>
 		<h3 class="pt">
 			<img src="/.basedflare/pow-icon" width="64" height="64" alt=" ">
-			Under maintenance. Please try again soon!
+			%[var(txn.lang_json),json_query($.Under maintenance\. Please try again soon!)]
 		</h3>
 		<footer>
 			<p>Node: <code>%[env(RAY_ID)]</code></p>
-			<p>Performance & security by <a href="https://basedflare.com" rel="noreferrer noopener" target="_blank">BasedFlare</a></p>
+			<p>%[var(txn.lang_json),json_query($.Performance & security by BasedFlare)]</p>
 		</footer>
 	</body>
 </html>

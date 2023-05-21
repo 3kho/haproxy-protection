@@ -22,7 +22,7 @@ for file_name in io.popen('ls "'..locales_path..'"*.json'):lines() do
 	local json_object = json.decode(json_contents)
 	file:close()
 	locales_table[file_name_without_ext] = json_object
-	locales_strings[file_name_without_ext] = json_contents
+	locales_strings[file_name_without_ext] = json.encode(json_object)
 end
 
 -- POW
@@ -87,11 +87,10 @@ function _M.kill_tor_circuit(txn)
 	utils.send_tor_control_port(circuit_identifier)
 end
 
--- read first language from accept-language in applet
+-- read first language from accept-language in applet (note: does not consider q values)
 local default_lang = "en-US"
-function _M.get_first_language(applet)
-	local accept_language = applet.headers["accept-language"] or {}
-	accept_language = accept_language[0] or ""
+function _M.get_first_language(context, is_applet)
+	local accept_language = utils.get_header_from_context(context, 'accept-language', is_applet)
 	if #accept_language > 0 and #accept_language < 100 then -- length limit preventing abuse
 		for lang in accept_language:gmatch("[^,%s]+") do
 			if not lang:find(";") then
@@ -101,11 +100,10 @@ function _M.get_first_language(applet)
 	end
 end
 
-
 function _M.view(applet)
 
 	-- set the ll and ls language var based off header or default to en-US
-	local lang = _M.get_first_language(applet)
+	local lang = _M.get_first_language(applet, true)
 	local ll = locales_table[lang]
 	if ll == nil then
 		ll = locales_table[default_lang]
@@ -377,6 +375,16 @@ function _M.view(applet)
 	applet:start_response()
 	applet:send(response_body)
 
+end
+
+-- set lang json in var for use with json_query sf for using translations in template files without a lua view
+function _M.set_lang_json(txn)
+	local lang = _M.get_first_language(txn, false)
+	local ls = locales_strings[lang]
+	if ls == nil then
+		ls = locales_strings[default_lang]
+	end
+	txn:set_var("txn.lang_json", ls)
 end
 
 -- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise

@@ -38,7 +38,7 @@ function setup_servers()
 		if verify_backend_ssl ~= nil then
 			tcp:send(string.format("add server %s %s check ssl verify required ca-file ca-certificates.crt sni req.hdr(Host)\n", server_name, backend_host))
 		else
-			tcp:send(string.format("add server %s %s check ssl verify none\n", server_name, backend_host))
+			tcp:send(string.format("add server %s %s\n", server_name, backend_host))
 		end;
 		tcp:send(string.format("enable server %s\n", server_name))
 		line = handle:read("*line")
