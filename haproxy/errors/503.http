@@ -16,11 +16,15 @@ footer{font-size:x-small;margin-top:auto;padding:10px;text-align:center;border-t
 		</style>
 	</head>
 	<body>
-		<h3 class="pt">Service Unavailable.</h3>
-		<p>Sorry, the backend is unreachable or down for essential maintenance. Try again soon!</p>
+		<h3 class="pt">
+			%[var(txn.lang_json),json_query($.Service Unavailable\.)]
+		</h3>
+		<p>
+			%[var(txn.lang_json),json_query($."Sorry, the backend is unreachable or down for essential maintenance\. Try again soon!")]
+		</p>
 		<footer>
 			<p>Node: <code>%[env(RAY_ID)]</code></p>
-			<p>Performance & security by <a href="https://basedflare.com" rel="noreferrer noopener" target="_blank">BasedFlare</a></p>
+			<p>%[var(txn.lang_json),json_query($.Performance & security by BasedFlare)]</p>
 		</footer>
 	</body>
 </html>

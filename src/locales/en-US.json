@@ -19,5 +19,14 @@
 "Run this in a linux terminal (requires <code>argon2</code> package installed):": "Run this in a linux terminal (requires <code>argon2</code> package installed):",
 "Run this in a linux terminal (requires <code>perl</code>):": "Run this in a linux terminal (requires <code>perl</code>):",
 "Paste the script output into the box and submit:": "Paste the script output into the box and submit:",
-"submit": "submit"
+"submit": "submit",
+"Bad Request.": "Bad Request.",
+"You look like a robot.": "You look like a robot.",
+"Request Time-out.": "Request Time-out.",
+"Slow down, you look like a robot.": "Slow down, you look like a robot.",
+"Internal Server Error, please try again later.": "Internal Server Error, please try again later.",
+"Bad Gateway.": "Bad Gateway.",
+"Service Unavailable.": "Service Unavailable.",
+"Sorry, the backend is unreachable or down for essential maintenance. Try again soon!": "Sorry, the backend is unreachable or down for essential maintenance. Try again soon!",
+"Gateway Time-out.": "Gateway Time-out."
 }
