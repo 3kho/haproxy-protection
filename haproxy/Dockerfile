@@ -1,3 +1,4 @@
+
 #
 # NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
 #
@@ -18,7 +19,7 @@ RUN set -eux; \
 		haproxy
 
 ENV HAPROXY_URL http://www.haproxy.org/download/2.7/src/snapshot/haproxy-ss-LATEST.tar.gz
-ENV DATAPLANEAPI_URL https://github.com/haproxytech/dataplaneapi/releases/download/v2.7.2/dataplaneapi_2.7.2_Linux_x86_64.tar.gz
+ENV DATAPLANEAPI_URL https://github.com/haproxytech/dataplaneapi/releases/download/v2.7.5/dataplaneapi_2.7.5_Linux_x86_64.tar.gz
 
 # see https://sources.debian.net/src/haproxy/jessie/debian/rules/ for some helpful navigation of the possible "make" arguments
 RUN set -eux; \
