@@ -5,13 +5,11 @@ name = "basedflare"
 mode = "single"
 
 dataplaneapi {
-  host = "127.0.0.1"
-  port = 2001
+  host       = "127.0.0.1"
+  port       = 2001
+  advertised = {}
 
-  user "admin" {
-    insecure = true
-    password = "admin"
-  }
+  scheme = ["http"]
 
   transaction {
     transaction_dir = "/tmp/haproxy"
@@ -22,7 +20,10 @@ dataplaneapi {
     ssl_certs_dir = "/etc/haproxy/ssl"
   }
 
-  advertised {}
+  user "admin" {
+    insecure = true
+    password = "admin"
+  }
 }
 
 haproxy {

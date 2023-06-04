@@ -12,15 +12,15 @@ NOTE: Use either HCAPTCHA_ or RECAPTHCA_, not both.
 - HMAC_COOKIE_SECRET - different random string, a salt for pow cookies
 - TOR_CONTROL_PORT_PASSWORD - the control port password for tor daemon
 - RAY_ID - string to identify the HAProxy node by
-- CHALLENGE_EXPIRY - how long solution cookies last for, in seconds
-- CHALLENGE_INCLUDES_IP - any value, whether to lock solved challenges to IP or tor circuit
 - BACKEND_NAME - Optional, name of backend to build from hosts.map
 - SERVER_PREFIX - Optional, prefix of server names used in server-template
-- ARGON_TIME - argon2 iterations
-- ARGON_KB - argon2 memory usage in KB
-- POW_DIFFICULTY - pow difficulty
+- VERIFY_BACKEND_SSL - whether to verify backend ssl, requires you have a private CA, install the cert on the proxies, and CA signed certs on your origins.
+- CHALLENGE_EXPIRY - how long solution cookies last for, in seconds
+- CHALLENGE_INCLUDES_IP - any value, whether to lock solved challenges to IP or tor circuit
+- ARGON_TIME - default argon2 iterations
+- ARGON_KB - default argon2 memory usage in KB
+- POW_DIFFICULTY - default pow difficulty
 - POW_TYPE - type of ahsh algorithm for pow "argon2" or "sha256"
-- VERIFY_BACKEND_SSL - whether to verify backend ssl, requires you have a private CA on the proxy and using it to sign your backend certs
 
 #### Run in docker (for testing/development)
 
@@ -37,7 +37,6 @@ Requires HAProxy compiled with lua support, and version >=2.5 for the native lua
 
 - Clone the repo somewhere. `/var/www/haproxy-protection` works.
 - Copy [haproxy.cfg](haproxy/haproxy.cfg) to `/etc/haproxy/haproxy.cfg`.
-  - Please note this configuration is very minimal, and is simply an example configuration for haproxy-protection. You are expected to customise it significantly or otherwise copy the relevant parts into your own haproxy config.
 - Copy/link [scripts](src/lua/scripts) to `/etc/haproxy/scripts`.
 - Copy/link [libs](src/lua/libs) to `/etc/haproxy/libs`.
 - Copy/link [template](haproxy/template) to `/etc/haproxy/template`.
@@ -50,6 +49,8 @@ sudo git config --global url."https://".insteadOf git:// #don't ask.
 sudo luarocks install argon2
 ```
 - Test your haproxy config, `sudo haproxy -c -V -f /etc/haproxy/haproxy.cfg`. You should see "Configuration file is valid".
+
+NOTE: the provided configuration is only an example. You are expected to customise it significantly or otherwise copy the relevant parts into your own haproxy config.
 
 If you have problems, read the error messages before opening an issue that is simply a bad configuration.
 

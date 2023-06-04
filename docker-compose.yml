@@ -12,6 +12,7 @@ services:
     volumes:
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
       - ./haproxy/dataplaneapi.hcl:/etc/haproxy/dataplaneapi.hcl
+      - ./haproxy/errors/:/etc/haproxy/errors/
       - ./haproxy/map/:/etc/haproxy/map/
       - ./haproxy/template/:/etc/haproxy/template/
       - ./src/lua/scripts/:/etc/haproxy/scripts/
@@ -38,12 +39,12 @@ services:
       - POW_TYPE=argon2
       - TOR_CONTROL_PORT_PASSWORD=changeme
 
-  nginx:
-    ports:
-      - 81:80
-    image: "nginx:latest"
-    volumes:
-      - ./nginx:/usr/share/nginx/html
+  # nginx:
+    # ports:
+      # - 81:80
+    # image: "nginx:latest"
+    # volumes:
+      # - ./nginx:/usr/share/nginx/html
 
 #  tor:
 #    build:

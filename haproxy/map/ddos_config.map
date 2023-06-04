@@ -1,1 +1,1 @@
-localhost {"pd":23,"pt":"sha256","cip":true,"cex":600}
+127.0.0.1 {"pd":"argon2","pt":23,"cip":false,"cex":43200}
