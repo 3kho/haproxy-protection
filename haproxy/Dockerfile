@@ -1,96 +1,89 @@
+FROM golang:latest AS dataplaneapi-builder
 
-#
-# NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
-#
-# PLEASE DO NOT EDIT IT DIRECTLY.
-#
+ENV DATAPLANE_MINOR 2.7.5
+ENV DATAPLANE_URL https://github.com/haproxytech/dataplaneapi.git
 
-FROM debian:buster-slim
+RUN git clone "${DATAPLANE_URL}" "${GOPATH}/src/github.com/haproxytech/dataplaneapi"
+RUN cd "${GOPATH}/src/github.com/haproxytech/dataplaneapi" && \
+    git checkout "v${DATAPLANE_MINOR}" && \
+    make build && cp build/dataplaneapi /dataplaneapi
 
-# roughly, https://salsa.debian.org/haproxy-team/haproxy/-/blob/732b97ae286906dea19ab5744cf9cf97c364ac1d/debian/haproxy.postinst#L5-6
-RUN set -eux; \
-	groupadd --gid 99 --system haproxy; \
-	useradd \
-		--gid haproxy \
-		--home-dir /var/lib/haproxy \
-		--no-create-home \
-		--system \
-		--uid 99 \
-		haproxy
+FROM debian:bullseye-slim AS openssl-builder
 
-ENV HAPROXY_URL http://www.haproxy.org/download/2.7/src/snapshot/haproxy-ss-LATEST.tar.gz
-ENV DATAPLANEAPI_URL https://github.com/haproxytech/dataplaneapi/releases/download/v2.7.5/dataplaneapi_2.7.5_Linux_x86_64.tar.gz
+ENV OPENSSL_SHA256 4e23619f73688144f2cd808e9567504c3bf10cb67ad9551280530fd54ca913e1
+ENV OPENSSL_URL https://github.com/quictls/openssl/archive/refs/tags/OpenSSL_1_1_1t-quic1.tar.gz
 
-# see https://sources.debian.net/src/haproxy/jessie/debian/rules/ for some helpful navigation of the possible "make" arguments
-RUN set -eux; \
-	\
-	savedAptMark="$(apt-mark showmanual)"; \
-	apt-get update && apt-get install -y --no-install-recommends \
-		ca-certificates \
-		gcc \
-		libc6-dev \
-		liblua5.3-dev \
-		libpcre2-dev \
-		libssl-dev \
-		make \
-		wget \
-		zlib1g-dev \
-		luarocks \
-	; \
-	rm -rf /var/lib/apt/lists/*; \
-	\
-	wget -O dataplaneapi_Linux_x86_64.tar.gz "$DATAPLANEAPI_URL"; \
-	tar -zxvf dataplaneapi_Linux_x86_64.tar.gz; \
-	chmod +x build/dataplaneapi; \
-	cp build/dataplaneapi /usr/local/bin/; \
-	\
-	wget -O haproxy.tar.gz "$HAPROXY_URL"; \
-#	echo "$HAPROXY_SHA256 *haproxy.tar.gz" | sha256sum -c; \
-	mkdir -p /usr/src/haproxy; \
-	tar -xzf haproxy.tar.gz -C /usr/src/haproxy --strip-components=1; \
-	rm haproxy.tar.gz; \
-	\
-	makeOpts=' \
-		TARGET=linux-glibc \
-		USE_GETADDRINFO=1 \
-		USE_LUA=1 LUA_INC=/usr/include/lua5.3 \
-		USE_OPENSSL=1 \
-		USE_PCRE2=1 USE_PCRE2_JIT=1 \
-		USE_ZLIB=1 \
-	'; \
-# https://salsa.debian.org/haproxy-team/haproxy/-/commit/53988af3d006ebcbf2c941e34121859fd6379c70
-	dpkgArch="$(dpkg --print-architecture)"; \
-	case "$dpkgArch" in \
-		armel) makeOpts="$makeOpts ADDLIB=-latomic" ;; \
-	esac; \
-	\
-	nproc="$(nproc)"; \
-	eval "make -C /usr/src/haproxy -j '$nproc' all $makeOpts"; \
-	eval "make -C /usr/src/haproxy install-bin $makeOpts"; \
-	\
-	mkdir -p /etc/haproxy; \
-	cp -R /usr/src/haproxy/examples/errorfiles /etc/haproxy/errors; \
-	rm -rf /usr/src/haproxy; \
-	\
-	apt-mark auto '.*' > /dev/null; \
-	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
-	find /usr/local -type f -executable -exec ldd '{}' ';' \
-		| awk '/=>/ { print $(NF-1) }' \
-		| sort -u \
-		| xargs -r dpkg-query --search \
-		| cut -d: -f1 \
-		| sort -u \
-		| xargs -r apt-mark manual \
-	; \
-	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
-	\
-# smoke test
-	haproxy -v
+ENV DEBIAN_FRONTEND noninteractive
 
-# https://www.haproxy.org/download/1.8/doc/management.txt
-# "4. Stopping and restarting HAProxy"
-# "when the SIGTERM signal is sent to the haproxy process, it immediately quits and all established connections are closed"
-# "graceful stop is triggered when the SIGUSR1 signal is sent to the haproxy process"
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends build-essential ca-certificates curl && \
+    curl -sfSL "${OPENSSL_URL}" -o openssl.tar.gz && \
+    mkdir -p /tmp/openssl && \
+    tar -xzf openssl.tar.gz -C /tmp/openssl --strip-components=1 && \
+    rm -f openssl.tar.gz && \
+    cd /tmp/openssl && \
+    ./config --libdir=lib --prefix=/opt/quictls && \
+    make -j $(nproc) && \
+    make install && \
+    rm -rf /tmp/openssl
+
+FROM debian:bullseye-slim
+
+MAINTAINER Dinko Korunic <dkorunic@haproxy.com>
+
+LABEL Name HAProxy
+LABEL Release Community Edition
+LABEL Vendor HAProxy
+LABEL Version 2.8.0
+LABEL RUN /usr/bin/docker -d IMAGE
+
+ENV HAPROXY_BRANCH 2.8
+ENV HAPROXY_MINOR 2.8.0
+ENV HAPROXY_SHA256 61cdafb5db7e9174d0757b8e4bcde938352306fb7cc8ff2b5f55c26dd48a6cf7
+ENV HAPROXY_SRC_URL http://www.haproxy.org/download
+
+ENV HAPROXY_UID haproxy
+ENV HAPROXY_GID haproxy
+
+ENV DEBIAN_FRONTEND noninteractive
+
+COPY --from=dataplaneapi-builder /dataplaneapi /usr/local/bin/dataplaneapi
+COPY --from=openssl-builder /opt/quictls /opt/quictls
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends procps zlib1g "libpcre2-*" liblua5.3-0 libatomic1 tar curl socat ca-certificates && \
+    apt-get install -y --no-install-recommends gcc make libc6-dev libpcre2-dev zlib1g-dev liblua5.3-dev && \
+    curl -sfSL "${HAPROXY_SRC_URL}/${HAPROXY_BRANCH}/src/haproxy-${HAPROXY_MINOR}.tar.gz" -o haproxy.tar.gz && \
+    echo "$HAPROXY_SHA256 *haproxy.tar.gz" | sha256sum -c - && \
+    groupadd "$HAPROXY_GID" && \
+    useradd -g "$HAPROXY_GID" "$HAPROXY_UID" && \
+    mkdir -p /tmp/haproxy && \
+    tar -xzf haproxy.tar.gz -C /tmp/haproxy --strip-components=1 && \
+    rm -f haproxy.tar.gz && \
+    make -C /tmp/haproxy -j"$(nproc)" TARGET=linux-glibc CPU=generic USE_PCRE2=1 USE_PCRE2_JIT=1 USE_OPENSSL=1 \
+                            USE_TFO=1 USE_LINUX_TPROXY=1 USE_LUA=1 USE_GETADDRINFO=1 \
+                            USE_PROMEX=1 USE_SLZ=1 \
+                            SSL_INC=/opt/quictls/include SSL_LIB=/opt/quictls/lib USE_QUIC=1 \
+                            LDFLAGS="-L/opt/quictls/lib -Wl,-rpath,/opt/quictls/lib" \
+                            all && \
+    make -C /tmp/haproxy TARGET=linux-glibc install-bin install-man && \
+    ln -s /usr/local/sbin/haproxy /usr/sbin/haproxy && \
+    mkdir -p /var/lib/haproxy && \
+    chown "$HAPROXY_UID:$HAPROXY_GID" /var/lib/haproxy && \
+    mkdir -p /usr/local/etc/haproxy && \
+    ln -s /usr/local/etc/haproxy /etc/haproxy && \
+    cp -R /tmp/haproxy/examples/errorfiles /usr/local/etc/haproxy/errors && \
+    rm -rf /tmp/haproxy && \
+    apt-get purge -y --auto-remove gcc make libc6-dev libpcre2-dev zlib1g-dev liblua5.3-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    chmod +x /usr/local/bin/dataplaneapi && \
+    ln -s /usr/local/bin/dataplaneapi /usr/bin/dataplaneapi && \
+    touch /usr/local/etc/haproxy/dataplaneapi.hcl && \
+    chown "$HAPROXY_UID:$HAPROXY_GID" /usr/local/etc/haproxy/dataplaneapi.hcl && \
+    echo "/opt/quictls/lib" > /etc/ld.so.conf.d/quictls.conf && \
+    ldconfig
+
 STOPSIGNAL SIGUSR1
 
 ADD haproxy/docker-entrypoint.sh /usr/local/bin/
@@ -98,7 +91,6 @@ RUN ln -s usr/local/bin/docker-entrypoint.sh / # backwards compat
 RUN apt update && apt install -y git lua5.3 liblua5.3-dev argon2 libargon2-dev luarocks
 RUN git config --global url."https://".insteadOf git://
 RUN luarocks install argon2
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-# no USER for backwards compatibility (to try to avoid breaking existing users)
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["haproxy", "-f", "/etc/haproxy/haproxy.cfg"]

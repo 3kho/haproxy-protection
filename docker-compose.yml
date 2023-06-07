@@ -5,12 +5,14 @@ services:
     network_mode: host
     ports:
       - 80:80
+      - 443:80
       - 2001:2001 #dataplaneapi
     build:
       context: ./
       dockerfile: haproxy/Dockerfile
     volumes:
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
+      - ./haproxy/haproxy.pem:/etc/haproxy/certs/haproxy.pem
       - ./haproxy/dataplaneapi.hcl:/etc/haproxy/dataplaneapi.hcl
       - ./haproxy/errors/:/etc/haproxy/errors/
       - ./haproxy/map/:/etc/haproxy/map/
@@ -39,12 +41,12 @@ services:
       - POW_TYPE=argon2
       - TOR_CONTROL_PORT_PASSWORD=changeme
 
-  # nginx:
-    # ports:
-      # - 81:80
-    # image: "nginx:latest"
-    # volumes:
-      # - ./nginx:/usr/share/nginx/html
+  nginx:
+    ports:
+      - 81:80
+    image: "nginx:latest"
+    volumes:
+      - ./nginx:/usr/share/nginx/html
 
 #  tor:
 #    build:
