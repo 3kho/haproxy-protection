@@ -37,7 +37,7 @@ services:
       - CHALLENGE_INCLUDES_IP=true
       - ARGON_TIME=2
       - ARGON_KB=512
-      - POW_DIFFICULTY=24
+      - POW_DIFFICULTY=20
       - POW_TYPE=argon2
       - TOR_CONTROL_PORT_PASSWORD=changeme
 

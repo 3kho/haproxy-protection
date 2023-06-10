@@ -1,2 +1,2 @@
-127.0.0.1 {"pd":23,"pt":"argon2","cip":false,"cex":43200}
-localhost {"pd":23,"pt":"argon2","cip":false,"cex":43200}
+127.0.0.1 {"pd":16,"pt":"sha256","cip":false,"cex":43200}
+localhost {"pd":16,"pt":"sha256","cip":false,"cex":43200}
