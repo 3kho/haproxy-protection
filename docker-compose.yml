@@ -12,7 +12,6 @@ services:
       dockerfile: haproxy/Dockerfile
     volumes:
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
-      - ./haproxy/haproxy.pem:/etc/haproxy/certs/haproxy.pem
       - ./haproxy/dataplaneapi.hcl:/etc/haproxy/dataplaneapi.hcl
       - ./haproxy/errors/:/etc/haproxy/errors/
       - ./haproxy/map/:/etc/haproxy/map/
