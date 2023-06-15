@@ -53,7 +53,7 @@ local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 local hmac_cookie_secret = os.getenv("HMAC_COOKIE_SECRET")
 local ray_id = os.getenv("RAY_ID")
 -- load captcha map and set hcaptcha/recaptch based off env vars
-local captcha_map = Map.new("/etc/haproxy/map/ddos.map", Map._str);
+local ddos_map = Map.new("/etc/haproxy/map/ddos.map", Map._str);
 local captcha_provider_domain = ""
 local captcha_classname = ""
 local captcha_script_src = ""
@@ -156,10 +156,12 @@ function _M.view(applet)
 		local captcha_enabled = false
 		local path = applet.qs; --because on /.basedflare/bot-check?/whatever, .qs (query string) holds the "path"
 
-		local captcha_map_lookup = captcha_map:lookup(host..path) or captcha_map:lookup(host) or 0
-		captcha_map_lookup = tonumber(captcha_map_lookup)
-		if captcha_map_lookup == 2 then
-			captcha_enabled = true
+		local ddos_map_lookup = ddos_map:lookup(host..path) or ddos_map:lookup(host)
+		if ddos_map_lookup ~= nil then
+			ddos_map_json = json.decode(ddos_map_lookup)
+			if ddos_map_json.m == 2 then
+				captcha_enabled = true
+			end
 		end
 
 		-- return simple json if they send accept: application/json header
@@ -412,15 +414,20 @@ end
 function _M.decide_checks_necessary(txn)
 	local host = txn.sf:hdr("Host")
 	local path = txn.sf:path();
-	local captcha_map_lookup = captcha_map:lookup(host..path) or captcha_map:lookup(host) or 0
-	captcha_map_lookup = tonumber(captcha_map_lookup)
-	if captcha_map_lookup == 1 then
-		txn:set_var("txn.validate_pow", true)
-	elseif captcha_map_lookup == 2 then
-		txn:set_var("txn.validate_captcha", true)
-		txn:set_var("txn.validate_pow", true)
+	local ddos_map_lookup = ddos_map:lookup(host..path) or ddos_map:lookup(host)
+	if ddos_map_lookup ~= nil then
+		ddos_map_json = json.decode(ddos_map_lookup)
+		if ddos_map_json.m == 0
+			or (ddos_map_json.t == true and txn.sf:hdr("X-Country-Code") ~= "T1") then
+			return
+		elseif ddos_map_json.m == 1 then
+			txn:set_var("txn.validate_pow", true)
+		elseif ddos_map_json.m == 2 then
+			txn:set_var("txn.validate_pow", true)
+			txn:set_var("txn.validate_captcha", true)
+		end
 	end
-	-- otherwise, domain+path was set to 0 (whitelist) or there is no entry in the map
+	-- no entry in the map
 end
 
 -- check if captcha cookie is valid, separate secret from POW

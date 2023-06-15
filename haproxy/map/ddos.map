@@ -1,4 +1,4 @@
-127.0.0.1 1
-127.0.0.1/captcha 2
-localhost 1
-localhost/captcha 2
+127.0.0.1 {"m":1,"t":true}
+127.0.0.1/captcha {"m":2}
+localhost {"m":1}
+localhost/captcha {"m":2}
