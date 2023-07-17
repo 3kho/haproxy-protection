@@ -32,12 +32,6 @@ Originally inspired by a proof of concept from https://github.com/mora9715/hapro
 
 See [INSTALLATION.md](INSTALLATION.md)
 
-#### Demos
-
-[Proof-of-work](https://basedflare.com/)
-
-[Proof-of-work+Captcha](https://basedflare.com/captcha)
-
 ## For generous people
 
 Bitcoin (BTC): [`bc1q4elrlz5puak4m9xy3hfvmpempnpqpu95v8s9m6`](bitcoin:bc1q4elrlz5puak4m9xy3hfvmpempnpqpu95v8s9m6)
