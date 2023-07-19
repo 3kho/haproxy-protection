@@ -156,7 +156,7 @@ const powFinished = new Promise((resolve) => {
 			}
 		});
 
-		if (!wasmSupported) {
+		if (argon2 && !wasmSupported) {
 			return insertError(__("Browser does not support WebAssembly."));
 		}
 		const powOpts = {

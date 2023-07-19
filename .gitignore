@@ -1,1 +1,3 @@
 tor/hidden_service/
+haproxy/*.pem
+haproxy/*.crt
