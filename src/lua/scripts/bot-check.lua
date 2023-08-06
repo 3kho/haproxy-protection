@@ -154,7 +154,7 @@ function _M.view(applet)
 
 		-- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
 		local captcha_enabled = false
-		local path = applet.qs; --because on /.basedflare/bot-check?/whatever, .qs (query string) holds the "path"
+		local path = url.getpath(applet.qs); --because on /.basedflare/bot-check?/whatever, .qs (query string) holds the old path
 
 		local ddos_map_lookup = ddos_map:lookup(host..path) or ddos_map:lookup(host)
 		if ddos_map_lookup ~= nil then

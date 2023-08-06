@@ -394,7 +394,6 @@ function M.parse(url)
 		M.setAuthority(comp, v)
 		return ''
 	end)
-
 	comp.path = url:gsub("([^/]+)", function (s) return encode(decode(s), M.options.legal_in_path) end)
 
 	setmetatable(comp, {
@@ -404,6 +403,15 @@ function M.parse(url)
 		__div = M.addSegment
 	})
 	return comp
+end
+
+--- Parse and return just the path from applet.qs
+-- @param qs string
+-- @return path string
+function M.getpath(qs)
+	qs = qs:gsub('%?(.*)', '')
+	local path = qs:gsub("([^/]+)", function (s) return encode(decode(s), M.options.legal_in_path) end)
+	return path or ""
 end
 
 --- removes dots and slashes in urls when possible
