@@ -409,8 +409,7 @@ end
 -- @param qs string
 -- @return path string
 function M.getpath(qs)
-	qs = qs:gsub('%?(.*)', '')
-	local path = qs:gsub("([^/]+)", function (s) return encode(decode(s), M.options.legal_in_path) end)
+	local path = qs:gsub('%?(.*)', '')
 	return path or ""
 end
 
