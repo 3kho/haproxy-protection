@@ -24,14 +24,17 @@ function setup_servers()
 	tcp:connect("127.0.0.1", 2000); --TODO: configurable port
 	while line do
 		local domain, backend_host = line:match("([^%s]+)%s+([^%s]+)")
+		print("reading line hosts.map: domain="..domain..",backend_host="..backend_host)
 		local new_map_value = server_prefix..counter
 		local existing_map_value = backends_map:lookup(domain)
 		if existing_map_value ~= nil then
+			print("existing_map_value: "..existing_map_value)
 			current_backends = utils.split(existing_map_value, ",")
 			if not utils.contains(current_backends, new_map_value) then
 				new_map_value = new_map_value .. "," .. existing_map_value
 			end
 		end
+		print("setting entry hosts.map: domain="..domain..",new_map_value="..new_map_value)
 		core.set_map("/etc/haproxy/map/backends.map", domain, new_map_value)
 		local server_name = "servers/websrv"..counter
 		--NOTE: if you have a proper CA setup,
