@@ -410,6 +410,38 @@ function _M.set_lang_json(txn)
 	txn:set_var("txn.lang_json", ls)
 end
 
+-- set a variable if ip or subnet in blocked/whitelist map and list of usernames matches the one for the current domain
+local blocked_map = Map.new("/etc/haproxy/map/blocked.map", Map._ip);
+local whitelist_map = Map.new("/etc/haproxy/map/whitelist.map", Map._ip);
+local accounts_map = Map.new("/etc/haproxy/map/domtoacc.map", Map._str);
+local maps_map = {
+	["blocked"] = blocked_map,
+	["whitelist"] = whitelist_map,
+}
+function _M.set_ip_var(txn, map_name, set_variable)
+	-- get the host header and user ip
+	local host = txn.sf:hdr("Host")
+	local ip = txn.sf:src()
+	if ip == nil or host == nil then
+		return
+	end
+	-- get the name of current domain user, and the list
+	-- of names that have blocked this ip (in case multiple)
+	local names_list = maps_map[map_name]:lookup(ip)
+	local current_name = accounts_map:lookup(string.lower(host))
+	if names_list == nil or current_name == nil then
+		return
+	end
+	-- loop through them and set the blocked var if found
+	local split_names = utils.split(names_list, ":")
+	for _, name in ipairs(split_names) do
+		if name == current_name then
+			txn:set_var(set_variable, true)
+			return
+		end
+	end
+end
+
 -- check if captcha is enabled, path+domain priority, then just domain, and 0 otherwise
 function _M.decide_checks_necessary(txn)
 	local host = txn.sf:hdr("Host")

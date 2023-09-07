@@ -1,9 +1,8 @@
 ---
 config_version: 2
 dataplaneapi:
-  tls:
-    host: 127.0.0.1
-    port: 2001
+  host: 0.0.0.0
+  port: 2001
   resources:
     update_map_files: true
     maps_dir: /etc/haproxy/map
@@ -16,6 +15,7 @@ dataplaneapi:
     - admin:
       name: admin
       insecure: true
+      password: admin
 haproxy:
   config_file: /etc/haproxy/haproxy.cfg
   haproxy_bin: /usr/local/sbin/haproxy
