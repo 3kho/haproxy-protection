@@ -1,13 +1,16 @@
 package.path = package.path  .. "./?.lua;/etc/haproxy/scripts/?.lua;/etc/haproxy/libs/?.lua"
 
 local bot_check = require("bot-check")
+local utils = require("utils")
 
 local backends_map = Map.new('/etc/haproxy/map/backends.map', Map._str)
 function get_server_names(txn)
     local key = txn.sf:hdr("Host")
     local value = backends_map:lookup(key or "")
     if value ~= nil then
-        return value
+        local vals = utils.split(value, ",")
+        -- todo: something smarter?
+        return vals[math.random(#vals)]
     else
         return ""
     end
