@@ -413,30 +413,43 @@ end
 -- set a variable if ip or subnet in blocked/whitelist map and list of usernames matches the one for the current domain
 local blockedip_map = Map.new("/etc/haproxy/map/blockedip.map", Map._ip);
 local blockedasn_map = Map.new("/etc/haproxy/map/blockedasn.map", Map._str);
+local blockedcc_map = Map.new("/etc/haproxy/map/blockedcc.map", Map._str);
+local blockedcn_map = Map.new("/etc/haproxy/map/blockedcn.map", Map._str);
 local whitelist_map = Map.new("/etc/haproxy/map/whitelist.map", Map._ip);
 local accounts_map = Map.new("/etc/haproxy/map/domtoacc.map", Map._str);
-local maps_map = {
+local maps_tbl = {
 	["blockedip"] = blockedip_map,
 	["blockedasn"] = blockedasn_map,
+	["blockedcc"] = blockedcc_map,
+	["blockedcn"] = blockedcn_map,
 	["whitelist"] = whitelist_map,
+}
+local lookupvar_tbl = {
+	["ip"] = function(_txn)
+		return _txn.sf:src()
+	end,
+	["asn"] = function(_txn)
+		return _txn:get_var("req.asn")
+	end,
+	["cc"] = function(_txn)
+		return _txn:get_var("req.xcc")
+	end,
+	["cn"] = function(_txn)
+		return _txn:get_var("txn.xcn")
+	end,
 }
 function _M.set_ip_var(txn, map_name, set_variable, lookup_var)
 	-- get the host header and user ip
 	local host = txn.sf:hdr("Host")
 	-- choose lookup key
-	local lookup_key = nil
-	if lookup_var == "ip" then -- 1=ip
-		lookup_key = txn.sf:src()
-	elseif lookup_var == "asn" then -- 2=asn
-		lookup_key = txn:get_var("req.asn")
-	end
+	local lookup_key = lookupvar_tbl[lookup_var](txn)
 	-- if none return
 	if lookup_key == nil or host == nil then
 		return
 	end
 	-- get the name of current domain user, and the list
 	-- of names that have blocked this ip (in case multiple)
-	local names_list = maps_map[map_name]:lookup(lookup_key)
+	local names_list = maps_tbl[map_name]:lookup(lookup_key)
 	local current_name = accounts_map:lookup(string.lower(host))
 	if names_list == nil or current_name == nil then
 		return
