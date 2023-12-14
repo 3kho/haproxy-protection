@@ -73,6 +73,11 @@ else
 	captcha_backend_name = "recaptcha"
 end
 
+function secondsToDate(seconds)
+	local formattedDate = os.date("!%a, %d-%b-%y %H:%M:%S GMT", seconds)
+	return formattedDate
+end
+
 -- kill a tor circuit
 function _M.kill_tor_circuit(txn)
 	local ip = txn.sf:src()
@@ -299,12 +304,14 @@ function _M.view(applet)
 								-- the answer was good, give them a cookie
 								local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry .. given_answer)
 								local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_expiry .. "#" .. given_answer .. "#" .. signature
+								local expiry_date_p = secondsToDate(expiry)
 								applet:add_header(
 									"set-cookie",
 									string.format(
-										--"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
-										"_basedflare_pow=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=%s; SameSite=Strict; %s",
+										--"_basedflare_pow=%s; Expires=%s; Path=/; Domain=.%s; SameSite=Strict; HttpOnly;%s",
+										"_basedflare_pow=%s; Expires=%s; Path=/; Domain=%s; SameSite=Strict; %s",
 										combined_cookie,
+										expiry_date_p,
 										applet.headers['host'][0],
 										secure_cookie_flag
 									)
@@ -363,11 +370,13 @@ function _M.view(applet)
 				local user_hash = utils.generate_challenge(applet, captcha_cookie_secret, user_key, ddos_config, true)
 				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash .. matched_expiry)
 				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. matched_expiry .. "#" .. signature
+				local expiry_date_c = secondsToDate(expiry)
 				applet:add_header(
 					"set-cookie",
 					string.format(
-						"_basedflare_captcha=%s; Expires=Thu, 31-Dec-37 23:55:55 GMT; Path=/; Domain=%s; SameSite=Strict; HttpOnly;%s",
+						"_basedflare_captcha=%s; Expires=%s; Path=/; Domain=%s; SameSite=Strict; HttpOnly;%s",
 						combined_cookie,
+						expiry_date_c,
 						applet.headers['host'][0],
 						secure_cookie_flag
 					)
