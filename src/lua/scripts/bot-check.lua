@@ -73,7 +73,7 @@ else
 	captcha_backend_name = "recaptcha"
 end
 
-function secondsToDate(seconds)
+function _M.secondsToDate(seconds)
 	local formattedDate = os.date("!%a, %d-%b-%y %H:%M:%S GMT", seconds)
 	return formattedDate
 end
@@ -250,6 +250,7 @@ function _M.view(applet)
 
 		-- if they fail, set a var for use in ACLs later
 		local valid_submission = false
+		local number_expiry = nil
 
 		-- parsed POST body
 		local parsed_body = url.parseQuery(applet.receive(applet))
@@ -276,7 +277,7 @@ function _M.view(applet)
 				local given_answer = split_response[5]
 
 				-- expiry check
-				local number_expiry = tonumber(given_expiry, 10)
+				number_expiry = tonumber(given_expiry, 10)
 				if number_expiry ~= nil and number_expiry > core.now()['sec'] then
 
 					-- regenerate the challenge and compare it
@@ -304,7 +305,7 @@ function _M.view(applet)
 								-- the answer was good, give them a cookie
 								local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, given_user_key .. given_challenge_hash .. given_expiry .. given_answer)
 								local combined_cookie = given_user_key .. "#" .. given_challenge_hash .. "#" .. given_expiry .. "#" .. given_answer .. "#" .. signature
-								local expiry_date_p = secondsToDate(expiry)
+								local expiry_date_p = _M.secondsToDate(number_expiry)
 								applet:add_header(
 									"set-cookie",
 									string.format(
@@ -370,7 +371,7 @@ function _M.view(applet)
 				local user_hash = utils.generate_challenge(applet, captcha_cookie_secret, user_key, ddos_config, true)
 				local signature = sha.hmac(sha.sha3_256, hmac_cookie_secret, user_key .. user_hash .. matched_expiry)
 				local combined_cookie = user_key .. "#" .. user_hash .. "#" .. matched_expiry .. "#" .. signature
-				local expiry_date_c = secondsToDate(expiry)
+				local expiry_date_c = _M.secondsToDate(number_expiry)
 				applet:add_header(
 					"set-cookie",
 					string.format(
