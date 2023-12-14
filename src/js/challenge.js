@@ -111,6 +111,7 @@ function postResponse(powResponse, captchaResponse) {
 		window.localStorage.setItem("_basedflare-redirect", Math.random());
 		finishRedirect();
 	}).catch(() => {
+		clearCookiesForDomain(location.hostname);
 		insertError(__("Failed to send request to server."));
 	});
 }
