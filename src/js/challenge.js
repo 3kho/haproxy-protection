@@ -83,6 +83,7 @@ function clearCookiesForDomains(domain) {
 		document.cookie = `_basedflare_pow=; Max-Age=-9999999; Path=/; Domain=.${subdomain}`;
 		document.cookie = `_basedflare_captcha=; Max-Age=-9999999; Path=/; Domain=.${subdomain}`;
 	}
+	location.reload();
 }
 
 function postResponse(powResponse, captchaResponse) {
