@@ -40,6 +40,15 @@ if (!window._basedflareAuto) {
 			});
 		};
 
+		clearCookiesForDomains = (domain) => {
+			const parts = domain.split('.');
+			for (let i = 0; i < parts.length - 1; i++) {
+				const subdomain = parts.slice(i).join('.');
+				document.cookie = `_basedflare_pow=; Max-Age=-9999999; Path=/; Domain=.${subdomain}`;
+				document.cookie = `_basedflare_captcha=; Max-Age=-9999999; Path=/; Domain=.${subdomain}`;
+			}
+		};
+
 		messageHandler = (e, json) => {
 			console.log('messageHandler')
 			if (e.data.length === 1) { return; }
@@ -57,10 +66,13 @@ if (!window._basedflareAuto) {
 				}),
 				redirect: "manual",
 			}).then((res) => {
-				if (res.status >= 400) {
-					this.fails++;
-					console.error("basedflare post status >= 400", res);
+				if (res.status >= 400 && res.status < 500) {
+					clearCookiesForDomain(location.hostname);
+					console.error("Server rejected your submission.");
+				} else if (res.status >= 500) {
+					console.error("Server encountered an error.");
 				}
+				this.fails++;
 			}).catch((e) => {
 				console.error(e);
 			}).finally(() => {

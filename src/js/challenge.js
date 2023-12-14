@@ -76,6 +76,15 @@ const wasmSupported = (() => {
 	// }
 // };
 
+function clearCookiesForDomains(domain) {
+	const parts = domain.split('.');
+	for (let i = 0; i < parts.length - 1; i++) {
+		const subdomain = parts.slice(i).join('.');
+		document.cookie = `_basedflare_pow=; Max-Age=-9999999; Path=/; Domain=.${subdomain}`;
+		document.cookie = `_basedflare_captcha=; Max-Age=-9999999; Path=/; Domain=.${subdomain}`;
+	}
+}
+
 function postResponse(powResponse, captchaResponse) {
 	const body = {
 		"pow_response": powResponse,
@@ -94,6 +103,7 @@ function postResponse(powResponse, captchaResponse) {
 	}).then((res) => {
 		const s = res.status;
 		if (s >= 400 && s < 500) {
+			clearCookiesForDomain(location.hostname);
 			return insertError(__("Server rejected your submission."));
 		} else if (s >= 500) {
 			return insertError(__("Server encountered an error."));
