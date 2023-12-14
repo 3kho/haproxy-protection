@@ -103,7 +103,7 @@ function postResponse(powResponse, captchaResponse) {
 	}).then((res) => {
 		const s = res.status;
 		if (s >= 400 && s < 500) {
-			clearCookiesForDomain(location.hostname);
+			clearCookiesForDomains(location.hostname);
 			return insertError(__("Server rejected your submission."));
 		} else if (s >= 500) {
 			return insertError(__("Server encountered an error."));
@@ -111,7 +111,7 @@ function postResponse(powResponse, captchaResponse) {
 		window.localStorage.setItem("_basedflare-redirect", Math.random());
 		finishRedirect();
 	}).catch(() => {
-		clearCookiesForDomain(location.hostname);
+		clearCookiesForDomains(location.hostname);
 		insertError(__("Failed to send request to server."));
 	});
 }

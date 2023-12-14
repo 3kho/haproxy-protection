@@ -67,7 +67,7 @@ if (!window._basedflareAuto) {
 				redirect: "manual",
 			}).then((res) => {
 				if (res.status >= 400 && res.status < 500) {
-					clearCookiesForDomain(location.hostname);
+					clearCookiesForDomains(location.hostname);
 					console.error("Server rejected your submission.");
 				} else if (res.status >= 500) {
 					console.error("Server encountered an error.");
@@ -76,6 +76,7 @@ if (!window._basedflareAuto) {
 			}).catch((e) => {
 				console.error(e);
 			}).finally(() => {
+				clearCookiesForDomains(location.hostname);
 				localStorage.removeItem('_basedflare-auto');
 			});
 		};
