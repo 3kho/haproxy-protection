@@ -77,7 +77,7 @@ const wasmSupported = (() => {
 // };
 
 function clearCookiesForDomains(domain) {
-	const parts = domain.split('.');
+	const parts = ['www', ...domain.split('.')];
 	for (let i = 0; i < parts.length - 1; i++) {
 		const subdomain = parts.slice(i).join('.');
 		document.cookie = `_basedflare_pow=; Max-Age=-9999999; Path=/; Domain=.${subdomain}`;
