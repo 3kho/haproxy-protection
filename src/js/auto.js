@@ -105,7 +105,14 @@ if (!window._basedflareAuto) {
 				}
 			}
 			const diffString = "0".repeat(diff);
-			const cpuThreads = window.navigator.hardwareConcurrency;
+			let cpuThreads;
+			try {
+				cpuThreads = window.navigator.hardwareConcurrency || 2;
+			} catch(e) {
+				//catch just in case, and potentially fix an issue w safari
+				console.warn('navigator.hardwareConcurrency unavailable');
+				cpuThreads = 2;
+			}
 			const isTor = location.hostname.endsWith(".onion");
 			const workerThreads = (isTor || cpuThreads === 2) ? cpuThreads : Math.max(Math.ceil(cpuThreads / 2), cpuThreads - 1);
 			for (let i = 0; i < workerThreads; i++) {

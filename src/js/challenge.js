@@ -1,6 +1,7 @@
 let TRANSLATIONS;
 
-function __(key, replacement=null) {
+function __(key) {
+	let replacement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 	const translation = TRANSLATIONS[key] || key;
 	return replacement !== null ? translation.replace('%s', replacement) : translation;
 }
@@ -185,7 +186,14 @@ const powFinished = new Promise((resolve) => {
 		const diffString = "0".repeat(Math.floor(diff / 8));
 		const [userkey, challenge] = pow.split("#");
 		if (window.Worker) {
-			const cpuThreads = window.navigator.hardwareConcurrency;
+			let cpuThreads;
+			try {
+				cpuThreads = window.navigator.hardwareConcurrency || 2;
+			} catch(e) {
+				//catch just in case, and potentially fix an issue w safari
+				console.warn('navigator.hardwareConcurrency unavailable');
+				cpuThreads = 2;
+			}
 			const isTor = location.hostname.endsWith(".onion");
 			/* Try to use all threads on tor, because tor limits threads for anti fingerprinting but this
 			   makes it awfully slow because workerThreads will always be = 1 */
