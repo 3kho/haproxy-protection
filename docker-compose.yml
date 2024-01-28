@@ -26,6 +26,7 @@ services:
       # These are the hcaptcha and recaptcha test keys, not leaking any dont worry :^)
       - HAPROXY_MAXCONN=5000
       - HAPROXY_CACHE_MB=500
+      - HAPROXY_CONTINENT=OC
       - HCAPTCHA_SITEKEY=20000000-ffff-ffff-ffff-000000000002
       - HCAPTCHA_SECRET=0x0000000000000000000000000000000000000000
       #- RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
