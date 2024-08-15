@@ -126,9 +126,9 @@ const powFinished = new Promise((resolve) => {
 		finished = true;
 		const hasCaptcha = document.getElementById("captcha");
 		if (hasCaptcha) {
-			updateElem(".powstatus", __("Waiting for captcha."), "#31cc31");
+			// updateElem(".powstatus", __("Waiting for captcha."), "#31cc31");
 		} else {
-			updateElem(".powstatus", __("Submitting..."), "#31cc31");
+			// updateElem(".powstatus", __("Submitting..."), "#31cc31");
 			makeLoaderGreen();
 		}
 		workers.forEach((w) => w.terminate());
@@ -211,10 +211,10 @@ const powFinished = new Promise((resolve) => {
 						Math.floor(requiredSec - elapsedSec),
 					); //dont show negative time
 					console.log(`${hps}H/s, ≈${remainingSec}s remaining`);
-					return updateElem(
-						".powstatus",
-						__('Working, ≈%ss remaining', remainingSec),
-					);
+					// return updateElem(
+					// 	".powstatus",
+					// 	__('Working, ≈%ss remaining', remainingSec),
+					// );
 				}
 				if (finished) return;
 				const [workerId, answer] = e.data;
