@@ -218,6 +218,9 @@ const powFinished = new Promise((resolve) => {
 				}
 				if (finished) return;
 				const [workerId, answer] = e.data;
+				if (!answer) {
+					return console.warn("Worker", workerId, "Returned with undefined answer");
+				}
 				console.log(
 					"Worker",
 					workerId,
