@@ -210,7 +210,7 @@ const powFinished = new Promise((resolve) => {
 						0,
 						Math.floor(requiredSec - elapsedSec),
 					); //dont show negative time
-					console.log(`${hps}H/s, ≈${remainingSec}s remaining`);
+					return console.log(`${hps}H/s, ≈${remainingSec}s remaining`);
 					// return updateElem(
 					// 	".powstatus",
 					// 	__('Working, ≈%ss remaining', remainingSec),
@@ -218,9 +218,6 @@ const powFinished = new Promise((resolve) => {
 				}
 				if (finished) return;
 				const [workerId, answer] = e.data;
-				if (!answer) {
-					return console.warn("Worker", workerId, "Returned with undefined answer");
-				}
 				console.log(
 					"Worker",
 					workerId,
