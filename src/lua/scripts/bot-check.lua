@@ -152,7 +152,6 @@ function _M.view(applet)
 		local combined_challenge = user_key .. "#" .. challenge_hash .. "#" .. expiry .. "#" .. signature
 
 		-- define body sections
-		local site_name_body = ""
 		local captcha_body = ""
 		local pow_body = ""
 		local noscript_extra_body = ""
@@ -183,10 +182,6 @@ function _M.view(applet)
 		end
 
 		-- pow at least is always enabled when reaching bot-check page
-		site_name_body = string.format(
-			templates.site_name_section,
-			string.format(ll["Verifying your connection to %s"], host)
-		)
 		if captcha_enabled then
 			captcha_body = string.format(
 				templates.captcha_section,
@@ -235,7 +230,7 @@ function _M.view(applet)
 			argon_time,
 			argon_kb,
 			ddos_config["pt"],
-			site_name_body,
+			string.format(ll["Verifying your connection to %s"], host),
 			pow_body,
 			captcha_body,
 			ll["JavaScript is required on this page."],
@@ -485,11 +480,11 @@ function _M.decide_checks_necessary(txn)
 		if ddos_map_json.m == 0
 			or (ddos_map_json.t == true and txn.sf:hdr("X-Country-Code") ~= "T1") then
 			return
-		elseif ddos_map_json.m == 1 then
+		else
 			txn:set_var("txn.validate_pow", true)
-		elseif ddos_map_json.m == 2 then
-			txn:set_var("txn.validate_pow", true)
-			txn:set_var("txn.validate_captcha", true)
+			if ddos_map_json.m == 2 then
+				txn:set_var("txn.validate_captcha", true)
+			end
 		end
 	end
 	-- no entry in the map

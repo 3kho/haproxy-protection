@@ -16,7 +16,10 @@ _M.body = [[
 		<script src="/.basedflare/js/challenge.min.js"></script>
 	</head>
 	<body data-pow="%s" data-diff="%s" data-time="%s" data-kb="%s" data-mode="%s">
-		%s
+		<h3 class="pt">
+			<img src="/.basedflare/pow-icon" width="64" height="64" alt=" ">
+			%s
+		</h3>
 		%s
 		%s
 		<noscript>
@@ -67,14 +70,6 @@ _M.noscript_extra_sha256 = [[
 					</form>
 				</ol>
 			</details>
-]]
-
--- title with favicon and hostname
-_M.site_name_section = [[
-		<h3 class="pt">
-			<img src="/.basedflare/pow-icon" width="64" height="64" alt=" ">
-			%s
-		</h3>
 ]]
 
 -- animation while waiting
