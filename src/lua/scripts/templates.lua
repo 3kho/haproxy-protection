@@ -82,26 +82,27 @@ _M.pow_section = [[
 		</div>
 ]]
 
--- alternative, spinner animation
--- .loader{display:inline-block;position:relative;width:80px;height:80px}
--- .loader div{box-sizing:border-box;display:block;position:absolute;width:32px;height:32px;margin:10px;border:5px solid var(--text-color);border-radius:50%%;animation:loader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:var(--text-color) transparent transparent transparent}
--- .loader div:nth-child(1){animation-delay:-0.45s}
--- .loader div:nth-child(2){animation-delay:-0.3s}
--- .loader div:nth-child(3){animation-delay:-0.15s}
--- @keyframes loader{0%%{transform:rotate(0deg)}100%%{transform:rotate(360deg)}}
--- <div class="jsonly">
--- <div class="loader"><div></div><div></div><div></div><div></div></div>
--- </div>
-
--- message, captcha form and submit button
-_M.captcha_section = [[
-		<p>
+-- captcha section
+local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY") or os.getenv("RECAPTCHA_SITEKEY")
+local captcha_classname = ""
+local captcha_script_src = ""
+if os.getenv("HCAPTCHA_SITEKEY") then
+	captcha_classname = "h-captcha"
+	captcha_script_src = "https://hcaptcha.com/1/api.js"
+else
+	captcha_classname = "g-recaptcha"
+	captcha_script_src = "https://www.google.com/recaptcha/api.js"
+end
+_M.captcha_section = string.format([[
+		<span>
 			%s
-		</p>
+		</span>
 		<div id="captcha" class="jsonly">
 			<div class="%s" data-sitekey="%s" data-callback="onCaptchaSubmit"></div>
 			<script src="%s" async defer></script>
 		</div>
-]]
+]], "%s", captcha_classname, captcha_sitekey, captcha_script_src)
+
+
 
 return _M

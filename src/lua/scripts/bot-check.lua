@@ -47,7 +47,6 @@ local ddos_default_config = {
 
 -- captcha variables
 local captcha_secret = os.getenv("HCAPTCHA_SECRET") or os.getenv("RECAPTCHA_SECRET")
-local captcha_sitekey = os.getenv("HCAPTCHA_SITEKEY") or os.getenv("RECAPTCHA_SITEKEY")
 local captcha_cookie_secret = os.getenv("CAPTCHA_COOKIE_SECRET")
 local pow_cookie_secret = os.getenv("POW_COOKIE_SECRET")
 local hmac_cookie_secret = os.getenv("HMAC_COOKIE_SECRET")
@@ -55,22 +54,13 @@ local ray_id = os.getenv("RAY_ID")
 -- load captcha map and set hcaptcha/recaptch based off env vars
 local ddos_map = Map.new("/etc/haproxy/map/ddos.map", Map._str);
 local captcha_provider_domain = ""
-local captcha_classname = ""
-local captcha_script_src = ""
 local captcha_siteverify_path = ""
-local captcha_backend_name = ""
 if os.getenv("HCAPTCHA_SITEKEY") then
 	captcha_provider_domain = "hcaptcha.com"
-	captcha_classname = "h-captcha"
-	captcha_script_src = "https://hcaptcha.com/1/api.js"
 	captcha_siteverify_path = "/siteverify"
-	captcha_backend_name = "hcaptcha"
 else
 	captcha_provider_domain = "www.google.com"
-	captcha_classname = "g-recaptcha"
-	captcha_script_src = "https://www.google.com/recaptcha/api.js"
 	captcha_siteverify_path = "/recaptcha/api/siteverify"
-	captcha_backend_name = "recaptcha"
 end
 
 function _M.secondsToDate(seconds)
@@ -185,10 +175,7 @@ function _M.view(applet)
 		if captcha_enabled then
 			captcha_body = string.format(
 				templates.captcha_section,
-				ll["Please solve the captcha to continue."],
-				captcha_classname,
-				captcha_sitekey,
-				captcha_script_src
+				ll["Please solve the captcha to continue."]
 			)
 		else
 			pow_body = string.format(
@@ -330,8 +317,6 @@ function _M.view(applet)
 			-- format the url for verifying the captcha response
 			local captcha_url = string.format(
 				"https://%s%s",
-				--Seems this is no longer needed, captcha_provider_domain works since 2.7
-				--core.backends[captcha_backend_name].servers[captcha_backend_name]:get_addr(),
 				captcha_provider_domain,
 				captcha_siteverify_path
 			)
