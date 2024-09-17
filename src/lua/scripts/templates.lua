@@ -114,12 +114,12 @@ else
 end
 _M.captcha_section = string.format([[
 		<span>
-			%s
+			%%s
 		</span>
 		<div id="captcha" class="jsonly">
 			<div class="%s" data-sitekey="%s" data-callback="onCaptchaSubmit"></div>
 			<script src="%s" async defer></script>
 		</div>
-]], "%s", captcha_classname, captcha_sitekey, captcha_script_src)
+]], captcha_classname, captcha_sitekey, captcha_script_src)
 
 return _M
