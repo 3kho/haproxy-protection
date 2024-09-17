@@ -44,6 +44,7 @@ services:
       - POW_DIFFICULTY=20
       - POW_TYPE=argon2
       - TOR_CONTROL_PORT_PASSWORD=changeme
+      - USE_INTER_FONT=1
 
   nginx:
     ports:
