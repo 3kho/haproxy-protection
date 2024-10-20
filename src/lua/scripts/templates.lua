@@ -28,6 +28,7 @@ _M.body = string.format([[
 %s
 %s
 		</style>
+		<link rel='stylesheet' href='data:text/css;charset=utf-8,%%s'>
 		<noscript>
 			<style>.jsonly{display:none}</style>
 		</noscript>

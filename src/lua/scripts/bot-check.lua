@@ -63,6 +63,8 @@ else
 	captcha_siteverify_path = "/recaptcha/api/siteverify"
 end
 
+local css_map = Map.new("/etc/haproxy/map/css.map", Map._str);
+
 function _M.secondsToDate(seconds)
 	local formattedDate = os.date("!%a, %d-%b-%y %H:%M:%S GMT", seconds)
 	return formattedDate
@@ -124,6 +126,9 @@ function _M.view(applet)
 		lang = default_lang
 	end
 	local ls = locales_strings[lang]
+
+	-- get any custom css
+	local css_val = css_map:lookup(host)
 
 	-- set response body and declare status code
 	local response_body = ""
@@ -212,6 +217,7 @@ function _M.view(applet)
 			lang,
 			ls,
 			ll["Hold on..."],
+			css_val,
 			combined_challenge,
 			ddos_config["pd"],
 			argon_time,
@@ -390,16 +396,6 @@ function _M.view(applet)
 
 end
 
--- set lang json in var for use with json_query sf for using translations in template files without a lua view
-function _M.set_lang_json(txn)
-	local lang = _M.get_first_language(txn, false)
-	local ls = locales_strings[lang]
-	if ls == nil then
-		ls = locales_strings[default_lang]
-	end
-	txn:set_var("txn.lang_json", ls)
-end
-
 -- set a variable if ip or subnet in blocked/whitelist map and list of usernames matches the one for the current domain
 local blockedip_map = Map.new("/etc/haproxy/map/blockedip.map", Map._ip);
 local blockedasn_map = Map.new("/etc/haproxy/map/blockedasn.map", Map._str);
@@ -428,6 +424,17 @@ local lookupvar_tbl = {
 		return _txn:get_var("txn.xcn")
 	end,
 }
+
+-- set lang json in var for use with json_query sf for using translations in template files without a lua view
+function _M.set_lang_json(txn)
+	local lang = _M.get_first_language(txn, false)
+	local ls = locales_strings[lang]
+	if ls == nil then
+		ls = locales_strings[default_lang]
+	end
+	txn:set_var("txn.lang_json", ls)
+end
+
 function _M.set_ip_var(txn, map_name, set_variable, lookup_var)
 	-- get the host header and user ip
 	local host = txn.sf:hdr("Host")
