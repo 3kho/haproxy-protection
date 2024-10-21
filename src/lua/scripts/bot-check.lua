@@ -128,7 +128,7 @@ function _M.view(applet)
 	local ls = locales_strings[lang]
 
 	-- get any custom css
-	local css_val = css_map:lookup(host)
+	local css_val = css_map:lookup(host) or ""
 
 	-- set response body and declare status code
 	local response_body = ""
