@@ -1,4 +1,5 @@
 version: "3.9"
+
 services:
 
   haproxy:
@@ -8,6 +9,7 @@ services:
       context: ./
       dockerfile: haproxy/Dockerfile
     volumes:
+      - shared-socket:/shared-sockets
       - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg
       #- ./haproxy/dataplaneapi.yml:/etc/haproxy/dataplaneapi.yml
       - ./haproxy/errors/:/etc/haproxy/errors/
@@ -41,13 +43,6 @@ services:
       - POW_TYPE=argon2
       - TOR_CONTROL_PORT_PASSWORD=changeme
       - USE_INTER_FONT=1
- 
-#   tor:
-#     build:
-#       context: ./
-#       dockerfile: tor/Dockerfile
-#     volumes:
-#       - ./tor/hidden_service:/var/lib/tor/hidden_service  # persists hs keys
 
   nginx:
     ports:
@@ -64,5 +59,17 @@ services:
       - VARNISH_SIZE=256M
       - VARNISH_PORT=8083
     volumes:
+      - shared-socket:/shared-sockets
       - ./varnish/default.vcl:/etc/varnish/default.vcl
-    command: varnishd -F -a :$VARNISH_PORT -f /etc/varnish/default.vcl -s malloc,$VARNISH_SIZE
+    command: varnishd -F -a /shared-sockets/haproxy-to-varnish-cache.sock -f /etc/varnish/default.vcl -s malloc,$VARNISH_SIZE
+    user: root
+
+#   tor:
+#     build:
+#       context: ./
+#       dockerfile: tor/Dockerfile
+#     volumes:
+#       - ./tor/hidden_service:/var/lib/tor/hidden_service  # persists hs keys
+
+volumes:
+  shared-socket:

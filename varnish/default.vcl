@@ -3,8 +3,7 @@ import std;
 
 # backend pointing to HAProxy
 backend haproxy {
-	.host = "127.0.0.1";
-	.port = "8080";
+	.path = "/shared-sockets/varnish-to-haproxy-internal.sock";
 }
 
 acl purge_allowed {
