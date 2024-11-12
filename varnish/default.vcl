@@ -1,6 +1,10 @@
 vcl 4.1;
 import std;
 
+sub vcl_init {
+	set purge_secret_key = "CHANGEME_YOUR_SECRET_KEY";
+}
+
 # backend pointing to HAProxy
 backend haproxy {
 	.path = "/shared-sockets/varnish-to-haproxy-internal.sock";
@@ -14,7 +18,7 @@ acl purge_allowed {
 sub vcl_recv {
 
 	# handle PURGE requests
-	if (req.method == "PURGE") {
+	if (req.method == "PURGE" && req.http.X-BasedFlare-Varnish-Key == secret_key) {
 		if (req.http.X-Forwarded-For) {
 			set req.http.X-Real-IP = regsub(req.http.X-Forwarded-For, ",.*", "");
 		} else {
