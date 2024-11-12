@@ -3,10 +3,6 @@ services:
 
   haproxy:
     network_mode: host
-    ports:
-      - 80:80
-      - 443:80
-      - 2001:2001 #dataplaneapi
     build:
       # no_cache: true
       context: ./
@@ -45,6 +41,13 @@ services:
       - POW_TYPE=argon2
       - TOR_CONTROL_PORT_PASSWORD=changeme
       - USE_INTER_FONT=1
+ 
+#   tor:
+#     build:
+#       context: ./
+#       dockerfile: tor/Dockerfile
+#     volumes:
+#       - ./tor/hidden_service:/var/lib/tor/hidden_service  # persists hs keys
 
   nginx:
     ports:
@@ -54,7 +57,12 @@ services:
     volumes:
       - ./nginx:/usr/share/nginx/html
 
-#  tor:
-#    build:
-#      context: ./
-#      dockerfile: tor/Dockerfile
+  varnish:
+    network_mode: host
+    image: varnish:latest
+    environment:
+      - VARNISH_SIZE=256M
+      - VARNISH_PORT=8083
+    volumes:
+      - ./varnish/default.vcl:/etc/varnish/default.vcl
+    command: varnishd -F -a :$VARNISH_PORT -f /etc/varnish/default.vcl -s malloc,$VARNISH_SIZE
