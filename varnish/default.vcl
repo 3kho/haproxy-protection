@@ -12,7 +12,6 @@ acl purge_allowed {
 	"172.19.0.1";
 }
 
-
 # incoming requests
 sub vcl_recv {
 
@@ -21,7 +20,7 @@ sub vcl_recv {
 		if (req.http.X-Forwarded-For) {
 			set req.http.X-Real-IP = regsub(req.http.X-Forwarded-For, ",.*", "");
 		} else {
-			# fallback to client ip
+			#set fallback to client ip
 			set req.http.X-Real-IP = client.ip;
 		}
 		if (std.ip(req.http.X-Real-IP, "0.0.0.0") ~ purge_allowed) {
@@ -36,59 +35,80 @@ sub vcl_recv {
 
 	# some conditions are not cached
 	if (req.method != "GET" && req.method != "HEAD") {
-		# Pass through for non-GET requests (e.g., POST, PUT)
+		# pass through for non-GET requests
 		return (pass);
 	}
 
-	# honor cache control headers for "no-cache" or "no-store" (might remove later or disable under ACL)
+	# honor cache control headers for "no-cache" or "no-store"
 	if (req.http.Cache-Control ~ "no-cache" || req.http.Cache-Control ~ "no-store") {
 		return (pass);
+	}
+
+	# save the Cookie header temporarily if needed by the backend
+	if (req.http.Cookie) {
+		set req.http.X-Cookie-Temp = req.http.Cookie;
+		unset req.http.Cookie;  # remove Cookie header for caching purposes
 	}
 }
 
 # caching behavior when fetching from backend
 sub vcl_backend_response {
-	# Only cache specific types of content and successful responses
+	if (beresp.http.Set-Cookie) {
+		set beresp.uncacheable = true;
+		return (pass);
+	}
+	# only cache specific types of content and successful responses
 	if ((beresp.status == 200 || beresp.status == 206) && beresp.http.Content-Type ~ "text|application|image|video|audio|font") {
-		# try to handle backend cache headers better
 		if (beresp.http.Cache-Control ~ "no-cache" || beresp.http.Cache-Control ~ "no-store" || beresp.http.Pragma == "no-cache") {
-			# dont cache if the backend specifies not to cache
+			#don't cache if the backend says no-cache
 			set beresp.uncacheable = true;
 			return (pass);
 		} else if (beresp.http.Cache-Control ~ "max-age") {
-			# if max-age is provided, use it directly
+			# use max-age if provided
 			set beresp.ttl = std.duration(regsub(beresp.http.Cache-Control, ".*max-age=([0-9]+).*", "\1") + "s", 0s);
 		} else if (beresp.http.Expires) {
-			# if using expire, calculate remaining TTL
+			# calculate ttl using Expires if present
 			set beresp.ttl = std.duration(beresp.http.Expires, 0s);
 		} else {
-			#default TTL if no caching header
+			# default ttl if no cache header
 			set beresp.ttl = 1m;
 		}
 
-		# grace period for serving stale content
+		# grace period for stale content
 		set beresp.grace = 10m;
 		set beresp.uncacheable = false;
 		set beresp.do_stream = true;
 		set beresp.do_gunzip = true;
 	} else {
-		# Non-cacheable or non-success responses
+		# non-cacheable or non-success responses
 		set beresp.uncacheable = true;
 		return (pass);
 	}
 
-	# should be caught by haproxy acl alreayd, but just in case
-	unset beresp.http.Set-Cookie;
+	# remove Set-Cookie for cacheable responses
+	if (!beresp.uncacheable) {
+		unset beresp.http.Set-Cookie;
+	}
 }
 
-# caching behavior when sending response
+# when sending response
 sub vcl_deliver {
 	unset resp.http.X-Varnish;
 	unset resp.http.Via;
-	# custom header to tell whether req was served from cache
+	unset req.http.X-Cookie-Temp; # ensure X-Cookie-Temp is gone
+
+	# custom header to indicate cache hit or miss
 	if (obj.hits > 0) {
 		set resp.http.X-Cache = "HIT";
 	} else {
 		set resp.http.X-Cache = "MISS";
+	}
+}
+
+# restore Cookie header to backend if saved
+sub vcl_backend_fetch {
+	if (bereq.http.X-Cookie-Temp) {
+		set bereq.http.Cookie = bereq.http.X-Cookie-Temp;
+		unset bereq.http.X-Cookie-Temp; # remove X-Cookie-Temp after use
 	}
 }
