@@ -15,16 +15,21 @@ acl purge_allowed {
 # incoming requests
 sub vcl_recv {
 
-	# handle PURGE requests
-	if (req.method == "PURGE" && req.http.X-BasedFlare-Varnish-Key == "changeme") {
+	# handle PURGE and BAN requests
+	if ((req.method == "PURGE" || req.method == "BAN") && req.http.X-BasedFlare-Varnish-Key == "changeme") {
 		if (req.http.X-Forwarded-For) {
 			set req.http.X-Real-IP = regsub(req.http.X-Forwarded-For, ",.*", "");
 		} else {
-			#set fallback to client ip
+			# set fallback to client IP
 			set req.http.X-Real-IP = client.ip;
 		}
 		if (std.ip(req.http.X-Real-IP, "0.0.0.0") ~ purge_allowed) {
-			return (purge);
+			#perform action based on the requestm ethod
+			if (req.method == "PURGE") {
+				return (purge);
+			} else if (req.method == "BAN") {
+				return (ban);
+			}
 		} else {
 			return (synth(405, "Not allowed"));
 		}
