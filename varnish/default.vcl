@@ -28,7 +28,8 @@ sub vcl_recv {
 			if (req.method == "PURGE") {
 				return (purge);
 			} else if (req.method == "BAN") {
-				return (ban);
+				ban("obj.http.x-url ~ " + req.url + " && obj.http.x-host == " + req.http.host);
+				return (synth(200, "Ban added"));
 			}
 		} else {
 			return (synth(405, "Not allowed"));
@@ -54,14 +55,21 @@ sub vcl_recv {
 		set req.http.X-Cookie-Temp = req.http.Cookie;
 		unset req.http.Cookie;  # remove Cookie header for caching purposes
 	}
+
 }
 
 # caching behavior when fetching from backend
 sub vcl_backend_response {
+
+	# for BANs
+	set beresp.http.x-url = bereq.url;
+	set beresp.http.x-host = bereq.http.host;
+
 	if (beresp.http.Set-Cookie) {
 		set beresp.uncacheable = true;
 		return (pass);
 	}
+
 	# only cache specific types of content and successful responses
 	if ((beresp.status == 200 || beresp.status == 206) && beresp.http.Content-Type ~ "text|application|image|video|audio|font") {
 		if (beresp.http.Cache-Control ~ "no-cache" || beresp.http.Cache-Control ~ "no-store" || beresp.http.Pragma == "no-cache") {
@@ -94,10 +102,17 @@ sub vcl_backend_response {
 	if (!beresp.uncacheable) {
 		unset beresp.http.Set-Cookie;
 	}
+
 }
 
 # when sending response
 sub vcl_deliver {
+
+	# for BANs
+	unset resp.http.x-url;
+	unset resp.http.x-host;
+
+	# remove some headers
 	unset resp.http.X-Varnish;
 	unset resp.http.Via;
 	unset req.http.X-Cookie-Temp; # ensure X-Cookie-Temp is gone
@@ -108,12 +123,15 @@ sub vcl_deliver {
 	} else {
 		set resp.http.X-Cache = "MISS";
 	}
+
 }
 
 # restore Cookie header to backend if saved
 sub vcl_backend_fetch {
+
 	if (bereq.http.X-Cookie-Temp) {
 		set bereq.http.Cookie = bereq.http.X-Cookie-Temp;
 		unset bereq.http.X-Cookie-Temp; # remove X-Cookie-Temp after use
 	}
+
 }
