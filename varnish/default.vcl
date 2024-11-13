@@ -57,7 +57,7 @@ sub vcl_backend_response {
 			return (pass);
 		} else if (beresp.http.Cache-Control ~ "max-age") {
 			# if max-age is provided, use it directly
-			set beresp.ttl = std.duration(regsub(beresp.http.Cache-Control, ".*max-age=([0-9]+).*", "\1"), 0s);
+			set beresp.ttl = std.duration(regsub(beresp.http.Cache-Control, ".*max-age=([0-9]+).*", "\1") + "s", 0s);
 		} else if (beresp.http.Expires) {
 			# if using expire, calculate remaining TTL
 			set beresp.ttl = std.duration(beresp.http.Expires, 0s);
@@ -83,6 +83,8 @@ sub vcl_backend_response {
 
 # caching behavior when sending response
 sub vcl_deliver {
+	unset resp.http.X-Varnish;
+	unset resp.http.Via;
 	# custom header to tell whether req was served from cache
 	if (obj.hits > 0) {
 		set resp.http.X-Cache = "HIT";
