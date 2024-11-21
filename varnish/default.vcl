@@ -2,6 +2,9 @@ vcl 4.1;
 import std;
 
 # backend pointing to HAProxy
+backend default {
+	.path = "/shared-sockets/varnish-to-haproxy-internal.sock";
+}
 backend haproxy {
 	.path = "/shared-sockets/varnish-to-haproxy-internal.sock";
 }
@@ -9,13 +12,24 @@ backend haproxy {
 acl purge_allowed {
 	"127.0.0.1";
 	"::1";
-	"172.19.0.1";
+	"103.230.159.7";
+	"2404:9400:2:0:216:3eff:fee3:5c06";
+}
+
+sub vcl_pipe {
+	return (pipe);
 }
 
 # incoming requests
 sub vcl_recv {
 
-	# handle PURGE and BAN requests
+	# route all requests to haproxy
+	set req.backend_hint = haproxy;
+
+	# unfuck x-forwarded-for
+	set req.http.X-Forwarded-For = regsub(req.http.X-Forwarded-For, "^([^,]+),?.*$", "\1");
+
+	# handle PURGE and BAN
 	if ((req.method == "PURGE" || req.method == "BAN") && req.http.X-BasedFlare-Varnish-Key == "changeme") {
 		if (req.http.X-Forwarded-For) {
 			set req.http.X-Real-IP = regsub(req.http.X-Forwarded-For, ",.*", "");
@@ -36,8 +50,9 @@ sub vcl_recv {
 		}
 	}
 
-	# route all requests to haproxy
-	set req.backend_hint = haproxy;
+	if (req.http.Range) {
+		return (pass);
+	}
 
 	# some conditions are not cached
 	if (req.method != "GET" && req.method != "HEAD") {
@@ -50,28 +65,44 @@ sub vcl_recv {
 		return (pass);
 	}
 
-	# save the Cookie header temporarily if needed by the backend
-	if (req.http.Cookie) {
-		set req.http.X-Cookie-Temp = req.http.Cookie;
-		unset req.http.Cookie;  # remove Cookie header for caching purposes
-	}
-
 }
 
-# caching behavior when fetching from backend
+sub vcl_hash {
+	hash_data(req.url);
+	if (req.http.Host) {
+		hash_data(req.http.Host);
+	}
+	if (req.http.Range) {
+		hash_data(req.http.Range);
+	}
+}
+
+## caching behavior when fetching from backend
 sub vcl_backend_response {
 
-	# for BANs
-	set beresp.http.x-url = bereq.url;
-	set beresp.http.x-host = bereq.http.host;
+	set beresp.do_stream = true;  # Stream directly
+	set beresp.transit_buffer = 1M; # testing
 
+	# dont cache > 100MB
+	if (beresp.http.Content-Length && std.integer(beresp.http.Content-Length, 0) > 100 * 1024 * 1024) {
+		set beresp.uncacheable = true;  # Don't cache
+		return (deliver);
+	}
+
+	# dont cache set-cookie responses
 	if (beresp.http.Set-Cookie) {
 		set beresp.uncacheable = true;
 		return (pass);
 	}
 
+	# dont cache ranges
+	# if (bereq.http.Range) {
+	# 	set beresp.ttl = 0s;
+	# 	set beresp.uncacheable = true;
+	# }
+
 	# only cache specific types of content and successful responses
-	if ((beresp.status == 200 || beresp.status == 206) && beresp.http.Content-Type ~ "text|application|image|video|audio|font") {
+	if ((beresp.status == 200 || beresp.status == 206) && (!beresp.http.Content-Type || beresp.http.Content-Type ~ "text|application|image|video|audio|font")) {
 		if (beresp.http.Cache-Control ~ "no-cache" || beresp.http.Cache-Control ~ "no-store" || beresp.http.Pragma == "no-cache") {
 			#don't cache if the backend says no-cache
 			set beresp.uncacheable = true;
@@ -81,26 +112,18 @@ sub vcl_backend_response {
 			set beresp.ttl = std.duration(regsub(beresp.http.Cache-Control, ".*max-age=([0-9]+).*", "\1") + "s", 0s);
 		} else if (beresp.http.Expires) {
 			# calculate ttl using Expires if present
-			set beresp.ttl = std.duration(beresp.http.Expires, 0s);
+			set beresp.ttl = std.duration(beresp.http.Expires + "s", 0s);
 		} else {
 			# default ttl if no cache header
 			set beresp.ttl = 1m;
 		}
-
 		# grace period for stale content
 		set beresp.grace = 10m;
 		set beresp.uncacheable = false;
-		set beresp.do_stream = true;
-		set beresp.do_gunzip = true;
 	} else {
 		# non-cacheable or non-success responses
 		set beresp.uncacheable = true;
 		return (pass);
-	}
-
-	# remove Set-Cookie for cacheable responses
-	if (!beresp.uncacheable) {
-		unset beresp.http.Set-Cookie;
 	}
 
 }
@@ -108,30 +131,16 @@ sub vcl_backend_response {
 # when sending response
 sub vcl_deliver {
 
-	# for BANs
-	unset resp.http.x-url;
-	unset resp.http.x-host;
-
-	# remove some headers
-	unset resp.http.X-Varnish;
-	unset resp.http.Via;
-	unset req.http.X-Cookie-Temp; # ensure X-Cookie-Temp is gone
+	# add accept-ranges for backend reqs
+	if (req.http.Range) {
+		set resp.http.Accept-Ranges = "bytes";
+	}
 
 	# custom header to indicate cache hit or miss
 	if (obj.hits > 0) {
 		set resp.http.X-Cache = "HIT";
 	} else {
 		set resp.http.X-Cache = "MISS";
-	}
-
-}
-
-# restore Cookie header to backend if saved
-sub vcl_backend_fetch {
-
-	if (bereq.http.X-Cookie-Temp) {
-		set bereq.http.Cookie = bereq.http.X-Cookie-Temp;
-		unset bereq.http.X-Cookie-Temp; # remove X-Cookie-Temp after use
 	}
 
 }
