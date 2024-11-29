@@ -27,18 +27,17 @@ sub vcl_recv {
 	set req.backend_hint = haproxy;
 
 	# unfuck x-forwarded-for
-	set req.http.X-Forwarded-For = regsub(req.http.X-Forwarded-For, "^([^,]+),?.*$", "\1");
+	if (req.http.X-Forwarded-For) {
+		set req.http.X-Forwarded-For = regsub(req.http.X-Forwarded-For, "^([^,]+),?.*$", "\1");
+	} else {
+		# set fallback to client IP
+		set req.http.X-Forwarded-For = client.ip;
+	}
 
 	# handle PURGE and BAN
 	if ((req.method == "PURGE" || req.method == "BAN") && req.http.X-BasedFlare-Varnish-Key == "changeme") {
-		if (req.http.X-Forwarded-For) {
-			set req.http.X-Real-IP = regsub(req.http.X-Forwarded-For, ",.*", "");
-		} else {
-			# set fallback to client IP
-			set req.http.X-Real-IP = client.ip;
-		}
-		if (std.ip(req.http.X-Real-IP, "0.0.0.0") ~ purge_allowed) {
-			#perform action based on the requestm ethod
+		if (std.ip(req.http.X-Forwarded-For, "0.0.0.0") ~ purge_allowed) {
+			#perform action based on the request method
 			if (req.method == "PURGE") {
 				return (purge);
 			} else if (req.method == "BAN") {
@@ -54,7 +53,7 @@ sub vcl_recv {
 		return (pass);
 	}
 
-	# some conditions are not cached
+	# some conditions are not cached (done in haproxy also, might be redundant)
 	if (req.method != "GET" && req.method != "HEAD") {
 		# pass through for non-GET requests
 		return (pass);
